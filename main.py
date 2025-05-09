@@ -100,7 +100,7 @@ async def play_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     # Kiểm tra xem cụm từ đã bị lặp lại chưa
-    if used_phrases.get(text, 0) >= 2:
+    if used_phrases.get(text, 0) >= 1:
         await eliminate_player(update,
                                context,
                                reason="Cụm từ bị lặp quá giới hạn")
