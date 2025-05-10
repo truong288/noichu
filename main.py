@@ -33,8 +33,8 @@ async def start_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Gửi thông báo cho người chơi khi trò chơi bắt đầu
     await update.message.reply_text("🎮 Trò chơi bắt đầu!\n"
-                                    "Gõ /join để tham gia trò chơi.\n"
-                                    "Gõ /begin để bắt đầu lượt đầu tiên.")
+                                    "👉Gõ /join để tham gia trò chơi.\n"
+                                    "👉Gõ /begin để bắt đầu lượt đầu tiên.")
 
 
 async def join_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
