@@ -103,7 +103,7 @@ async def play_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if used_phrases.get(text, 0) >= 1:
         await eliminate_player(update,
                                context,
-                               reason="Cụm từ bị lặp quá giới hạn")
+                               reason="Cụm từ đã bị sử dụng")
         return
 
     used_phrases[text] = used_phrases.get(text, 0) + 1
@@ -114,7 +114,7 @@ async def play_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
         winner_id = players[0]
         chat = await context.bot.get_chat(winner_id)
         mention = f"<a href='tg://user?id={winner_id}'>@{chat.username or chat.first_name}</a>"
-        await update.message.reply_text(f"🏆 {mention} GIÀNH CHIẾN THẮNG!",
+        await update.message.reply_text(f"🏆 {mention} Vô Địch Nối CHỮ!🏆🏆",
                                         parse_mode="HTML")
         reset_game()
         return
