@@ -173,16 +173,15 @@ async def turn_timer(context):
         players.remove(user_id)
 
        if len(players) == 1:
-    winner_id = players[0]
-    winner_chat = await context.bot.get_chat(winner_id)
-    mention = f"<a href='tg://user?id={winner_id}'>@{winner_chat.username or winner_chat.first_name}</a>"
-    await context.bot.send_message(
-        chat_id=context._chat_id,
-        text=f"🏆 {mention} Vô Địch Nối CHỮ!🏆🏆",
-        parse_mode="HTML"
-    )
-    reset_game()
-    return
+            winner_id = players[0]
+            winner_chat = await context.bot.get_chat(winner_id)
+            mention = f"<a href='tg://user?id={winner_id}'>@{winner_chat.username or winner_chat.first_name}</a>"
+            await context.bot.send_message(
+                chat_id=context._chat_id,
+                text=f"🏆 {mention} Vô Địch Nối CHỮ!🏆🏆",
+                parse_mode="HTML"
+            reset_game()
+            return
 
 
         if current_player_index >= len(players):
