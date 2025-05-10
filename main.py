@@ -27,14 +27,13 @@ def reset_game():
 
 
 async def start_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    reset_game()  # Reset lại các trạng thái của trò chơi
+    reset_game()
     global in_game
-    in_game = True  # Đánh dấu trò chơi đã bắt đầu
+    in_game = True
 
-    # Gửi thông báo cho người chơi khi trò chơi bắt đầu
     await update.message.reply_text("🎮 Trò chơi bắt đầu!\n"
-                                    "👉Gõ /join để tham gia trò chơi.\n"
-                                    "👉Gõ /begin để bắt đầu lượt đầu tiên.")
+                                    "👉 Gõ /join để tham gia trò chơi.\n"
+                                    "👉 Gõ /begin để bắt đầu lượt đầu tiên.")
 
 
 async def join_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -43,7 +42,7 @@ async def join_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user.id not in players:
         players.append(user.id)
         await update.message.reply_text(
-            f"✅ {user.first_name} đã tham gia... (Tổng {len(players)} )")
+            f"✅ {user.first_name} đã tham gia... (Tổng {len(players)})")
     else:
         await update.message.reply_text("⚠️ Bạn đã tham gia rồi!")
 
@@ -51,8 +50,7 @@ async def join_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def begin_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global current_player_index, waiting_for_phrase
     if len(players) < 2:
-        await update.message.reply_text(
-            "❗ Cần ít nhất 2 người chơi để bắt đầu.")
+        await update.message.reply_text("❗ Cần ít nhất 2 người chơi để bắt đầu.")
         return
 
     waiting_for_phrase = True
@@ -94,16 +92,12 @@ async def play_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await start_turn_timer(context)
         return
 
-    # Kiểm tra xem từ đầu tiên có đúng không (từ đầu của cụm sau phải trùng từ cuối của cụm trước)
     if text.split()[0] != current_phrase.split()[-1]:
         await eliminate_player(update, context, reason="Không đúng từ nối")
         return
 
-    # Kiểm tra xem cụm từ đã bị lặp lại chưa
     if used_phrases.get(text, 0) >= 1:
-        await eliminate_player(update,
-                               context,
-                               reason="Cụm từ đã bị sử dụng")
+        await eliminate_player(update, context, reason="Cụm từ đã bị sử dụng")
         return
 
     used_phrases[text] = used_phrases.get(text, 0) + 1
@@ -172,17 +166,16 @@ async def turn_timer(context):
             parse_mode="HTML")
         players.remove(user_id)
 
-       if len(players) == 1:
+        if len(players) == 1:
             winner_id = players[0]
             winner_chat = await context.bot.get_chat(winner_id)
             mention = f"<a href='tg://user?id={winner_id}'>@{winner_chat.username or winner_chat.first_name}</a>"
             await context.bot.send_message(
                 chat_id=context._chat_id,
                 text=f"🏆 {mention} Vô Địch Nối CHỮ!🏆🏆",
-                parse_mode="HTML"
+                parse_mode="HTML")
             reset_game()
             return
-
 
         if current_player_index >= len(players):
             current_player_index = 0
@@ -200,7 +193,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 if __name__ == '__main__':
-    TOKEN = "7670306744:AAHIKDeed6h3prNCmkFhFydwrHkxJB5HM6g"  # Thay bằng token thật
+    TOKEN = "7670306744:AAHIKDeed6h3prNCmkFhFydwrHkxJB5HM6g"
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("startgame", start_game))
