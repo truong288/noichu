@@ -1,8 +1,10 @@
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 from stay_alive import keep_alive
-keep_alive()
 import asyncio
+import re
+
+keep_alive()
 
 # Game state
 players = []
@@ -25,6 +27,11 @@ def reset_game():
     if turn_timeout_task:
         turn_timeout_task.cancel()
         turn_timeout_task = None
+
+
+def is_vietnamese(text):
+    return bool(re.search(r'[àáạảãâầấậẩẫăằắặẳẵêèéẹẻẽềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡ'
+                          r'ùúụủũưừứựửữỳýỵỷỹđ]', text))
 
 
 async def start_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -77,6 +84,14 @@ async def play_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user.id != players[current_player_index]:
         return
 
+    if not is_vietnamese(text):
+        await eliminate_player(update, context, reason="Không dùng tiếng Việt")
+        return
+
+    if len(text.split()) != 2:
+        await eliminate_player(update, context, reason="Cụm từ phải có đúng 2 từ")
+        return
+
     if waiting_for_phrase:
         current_phrase = text
         used_phrases[text] = 1
@@ -101,7 +116,7 @@ async def play_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await eliminate_player(update, context, reason="Cụm từ đã bị sử dụng")
         return
 
-    used_phrases[text] = used_phrases.get(text, 0) + 1
+    used_phrases[text] = 1
     current_phrase = text
     current_player_index = (current_player_index + 1) % len(players)
 
@@ -119,7 +134,7 @@ async def play_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
     next_mention = f"<a href='tg://user?id={next_id}'>@{next_chat.username or next_chat.first_name}</a>"
 
     await update.message.reply_text(
-        f"✅ Hợp lệ! \u2003\u2003 Nối tiếp từ: '{text.split()[-1]}' .Tới lượt bạn! {next_mention} ",
+        f"✅ Hợp lệ! Nối tiếp từ: '{text.split()[-1]}'. Tới lượt bạn {next_mention}",
         parse_mode="HTML")
     await start_turn_timer(context)
 
@@ -143,7 +158,7 @@ async def eliminate_player(update, context, reason):
     else:
         await update.message.reply_text(
             f"Hiện còn lại {len(players)} người chơi.")
-        await start_turn_timer(context)
+        await begin_game(update, context)
 
 
 async def start_turn_timer(context):
