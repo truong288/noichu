@@ -1,6 +1,7 @@
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 from stay_alive import keep_alive
+keep_alive()
 import asyncio
 
 # Game state
