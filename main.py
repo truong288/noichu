@@ -141,15 +141,16 @@ async def play_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def eliminate_player(update, context, reason):
     global players, current_player_index, current_phrase
     user = update.effective_user
-    await update.message.reply_text(
-        f"❌ {user.first_name} bị loại! Lý do: {reason}")
-
+    await update.message.reply_text(f"❌ {user.first_name} bị loại! Lý do: {reason}")
+    
     eliminated_index = players.index(user.id)
     players.remove(user.id)
 
+    # Cập nhật current_player_index
     if eliminated_index < current_player_index:
         current_player_index -= 1
     elif eliminated_index == current_player_index:
+        # Nếu người bị loại là người hiện tại, không tăng index vì đã loại
         if current_player_index >= len(players):
             current_player_index = 0
 
@@ -157,20 +158,19 @@ async def eliminate_player(update, context, reason):
         winner_id = players[0]
         chat = await context.bot.get_chat(winner_id)
         mention = f"<a href='tg://user?id={winner_id}'>@{chat.username or chat.first_name}</a>"
-        await update.message.reply_text(f"🏆 {mention} Vô Địch Nối CHỮ!🏆🏆",
-                                        parse_mode="HTML")
+        await update.message.reply_text(f"🏆 {mention} Vô Địch Nối CHỮ!🏆🏆", parse_mode="HTML")
         reset_game()
     else:
         await update.message.reply_text(f"👥 Còn lại {len(players)} người chơi.")
-
         next_id = players[current_player_index]
         next_chat = await context.bot.get_chat(next_id)
         mention = f"<a href='tg://user?id={next_id}'>@{next_chat.username or next_chat.first_name}</a>"
         await update.message.reply_text(
-            f"✏️ {mention}, hãy nối tiếp với từ: '{current_phrase.split()[-1]}'",
+            f"✏️ {mention}, Hãy nối tiếp với từ: '{current_phrase.split()[-1]}'",
             parse_mode="HTML"
         )
         await start_turn_timer(context)
+
 
     global turn_timeout_task
     if turn_timeout_task:
