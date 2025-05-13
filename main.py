@@ -134,10 +134,9 @@ async def play_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
     next_mention = f"<a href='tg://user?id={next_id}'>@{next_chat.username or next_chat.first_name}</a>"
 
     await update.message.reply_text(
-        f"✅ Hợp lệ! Nối tiếp từ: '{text.split()[-1]}'. Tới lượt bạn {next_mention}",
+        f"✅ Hợp lệ! \u2003\u2003 Nối tiếp từ: '{text.split()[-1]}' .Tới lượt bạn! {next_mention} ",
         parse_mode="HTML")
     await start_turn_timer(context)
-
 
 async def eliminate_player(update, context, reason):
     global players, current_player_index
