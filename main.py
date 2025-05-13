@@ -1,8 +1,12 @@
+import openai
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 from stay_alive import keep_alive
 import asyncio
 import re
+
+# Cài API OpenAI
+openai.api_key = "YOUR_OPENAI_API_KEY"  # Thêm API Key của bạn vào đây
 
 keep_alive()
 
@@ -14,7 +18,21 @@ current_player_index = 0
 in_game = False
 waiting_for_phrase = False
 turn_timeout_task = None
-win_counts = {}  # Thêm thống kê số lần thắng
+win_counts = {}
+
+# Kiểm tra tính hợp lý của từ nối với GPT
+async def check_meaning(previous_phrase, current_phrase):
+    try:
+        response = openai.Completion.create(
+            model="text-davinci-003",  # Hoặc GPT-4 nếu có quyền truy cập
+            prompt=f"Kiểm tra xem cụm từ '{previous_phrase} -> {current_phrase}' có hợp lý và có nghĩa không trong ngữ cảnh tiếng Việt.",
+            temperature=0.7,
+            max_tokens=50
+        )
+        result = response.choices[0].text.strip()
+        return result
+    except Exception as e:
+        return f"Đã có lỗi khi gọi API: {str(e)}"
 
 
 def reset_game():
@@ -103,6 +121,12 @@ async def play_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"✅ Từ bắt đầu là: '{text}'. {mention}, hãy nối với từ '{text.split()[-1]}'",
             parse_mode="HTML")
         await start_turn_timer(context)
+        return
+
+    # Kiểm tra tính hợp lý của cụm từ nối trước khi tiếp tục
+    result = await check_meaning(current_phrase, text)
+    if "không hợp lý" in result or "không có nghĩa" in result:
+        await eliminate_player(update, context, reason="Cụm từ không hợp lý hoặc không có nghĩa. Bạn quá kém!")
         return
 
     if text.split()[0] != current_phrase.split()[-1]:
@@ -215,7 +239,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 if __name__ == '__main__':
-    TOKEN = "7670306744:AAHIKDeed6h3prNCmkFhFydwrHkxJB5HM6g"
+    TOKEN = "7995385268:AAEx4uelfTCYtzkze0vZ4G4eDaau_EfYnjw"
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("startgame", start_game))
