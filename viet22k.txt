@@ -2,24 +2,21 @@ a dua
 a ha
 a hoàn
 a la hán
-a-lô
-a-men
-a-míp
-a-pác-thai
+a lô
+a men
+a míp
+a pác
 a phiến
-a-rập học
+a rập
 a tòng
-a-xit
-à
+a xít
 à này
 à uôm
-ả
 ả đào
 ả đầu
 ả hằng
 ả phiện
 ả phù dung
-á
 á châu
 á hoang mạc
 á khanh
@@ -27,7 +24,6 @@ a-xit
 á khôi
 á kim
 á nhiệt đới
-ạ
 ác
 ác bá
 ác cảm
@@ -40,7 +36,7 @@ a-xit
 ác ma
 ác miệng
 ác mỏ
-ác-mô-ni-ca
+ác mô
 ác mộng
 ác nghiệt
 ác ngôn
@@ -56,15 +52,12 @@ a-xit
 ác ý
 ách
 ách tắc
-ai
 ai ai
 ai cập học
 ai đời
 ai nấy
 ai oán
-ải
 ải quan
-ái
 ái ân
 ái chà
 ái dà
@@ -81,12 +74,10 @@ ai oán
 ái quốc
 ái tài
 ái tình
-ái tình học
-am
+ái tình
 am hiểu
 am tường
 ảm đạm
-ám
 ám ảnh
 ám chỉ
 ám điểm
@@ -100,7 +91,6 @@ am tường
 ám thị
 ám tiêu
 ám trợ
-an
 an bài
 an-bom
 an dưỡng
@@ -121,12 +111,11 @@ an thân
 an thần
 an toạ
 an toàn
-an toàn khu
+an toàn
 an trí
-an tức hương
+an tức
 an ủi
 an vị
-án
 án gian
 án lệ
 án lệnh
@@ -141,9 +130,7 @@ an vị
 án tích
 án treo
 án từ
-ang
 ang áng
-ảng
 áng
 áng chừng
 áng độ
@@ -159,8 +146,9 @@ anh em
 anh hào
 anh hoa
 anh hùng
-anh hùng ca
-anh hùng chủ nghĩa
+anh hùng
+anh hùng
+chủ nghĩa
 anh kiệt
 anh kim
 anh linh
@@ -38808,62 +38796,20 @@ xương búa
 xương bướm
 xương chạc
 xương chày
-xương chẩm
-xương chêm
-xương cốt
-xương cốt
-xương cùng
-xương cụt
-xương đe
-xương đòn
-xương đùi
-xương ghe
-xương giăm
-xương gót
-xương hoá
-xương hom
-xương hông
-xương khô
-xương lưỡi hái
-xương ống
-xương rồng
-xương rồng
-xương sàng
-xương sên
-xương sọ
-xương sống
-xương sống
-xương sườn
-xương sườn
-xương thiêng
-xương thịnh
-xương thịt
-xương thóp
-xương thuyền
-xương trụ
-xương tuỷ
-xương ức
-xương vừng
-xương xảu
-xương xẩu
-xương xẩu
-xương xương
-xưởng
-xưởng
+xương chẩtrưởng
 xưởng máy
 xưởng thợ
 xưởng trưởng
 xướng
-xướng
+xướng ca
 xướng âm
 xướng ca
 xướng danh
-xướng danh
+xưng danh
 xướng hoạ
 xướng tên
 xướng tùy
 xướng xuất
-y
 y
 y án
 y bạ
@@ -38877,12 +38823,10 @@ y giới
 y hệt
 y hoá học
 y học
-y học
 y khoa
 y khoa
 y lệnh
 y lí
-y nguyên
 y nguyên
 y nguyện
 y nhiên
@@ -38890,13 +38834,12 @@ y như
 y phục
 y phục
 y sĩ
-y sĩ
+y sỹ
 y sinh
 y sư
 y tá
 y tá
 y tá trưởng
-y tế
 y tế
 y thường
 y trang
@@ -38906,11 +38849,9 @@ y viện
 y vụ
 y xá
 ỷ
-ỷ
 ỷ lại
 ỷ quyền
 ỷ thế
-ý
 ý
 ý chí
 ý chí
@@ -38941,11 +38882,10 @@ y xá
 ý trung nhân
 ý tứ
 ý tưởng
-ý tưởng
+ý trưởng
 ý vận
 ý vị
 ý vị
-yểm
 yểm
 yểm bùa
 yểm hộ
@@ -38954,13 +38894,11 @@ yểm trợ
 yểm trợ
 yểm trừ
 yếm
-yếm
 yếm dãi
 yếm dãi
 yếm khí
 yếm thế
 yếm thế
-yên
 yên
 yên ả
 yên ắng
@@ -38990,7 +38928,6 @@ yên ủi
 yên vị
 yên vui
 yến
-yến
 yến anh
 yến ẩm
 yến diên
@@ -39004,7 +38941,6 @@ yêng hùng
 yểng
 yểng quạ
 yết
-yết
 yết hầu
 yết hầu
 yết hậu
@@ -39012,7 +38948,6 @@ yết kiến
 yết kiến
 yết thị
 yết thị
-yêu
 yêu
 yêu cầu
 yêu cầu
@@ -39043,12 +38978,10 @@ yêu tinh
 yêu vì
 yêu yếu
 yểu
-yểu
 yểu điệu
 yểu điệu
 yểu tử
 yểu tướng
-yếu
 yếu
 yếu đau
 yếu địa
