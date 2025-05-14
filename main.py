@@ -84,7 +84,7 @@ async def play_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     if not is_vietnamese(text):
-        await eliminate_player(update, context, reason="Không dùng tiếng Việt")
+        await eliminate_player(update, context, reason="Dùng tiếng Việt")
         return
 
     words = text.split()
@@ -93,7 +93,7 @@ async def play_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     if contains_bad_word(text):
-        await eliminate_player(update, context, reason="Chứa từ ngữ không phù hợp.")
+        await eliminate_player(update, context, reason="Không Nghĩa.")
         return
 
     if used_phrases.get(text, 0) >= 1:
@@ -126,7 +126,7 @@ async def play_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
     mention = f"<a href='tg://user?id={next_id}'>@{next_chat.username or next_chat.first_name}</a>"
 
     await update.message.reply_text(
-        f"✅ Hợp lệ! Từ tiếp theo nối với: '{current_phrase.split()[-1]}'. {mention} tới lượt bạn!",
+        f"✅ Hợp lệ! \u2003\u2003 Từ tiếp theo nối với: '{current_phrase.split()[-1]}'.\u2003 Tới lượt bạn! {mention} ",
         parse_mode="HTML")
     await start_turn_timer(context)
 
