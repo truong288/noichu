@@ -27,7 +27,7 @@ async def check_meaning(previous_phrase, current_phrase):
             model="gpt-3.5-turbo",  # Dùng GPT-4 nếu có thể
             messages=[
                 {"role": "system", "content": "Bạn là một giáo viên nghiêm khắc về ngữ nghĩa tiếng Việt. Nhiệm vụ của bạn là kiểm tra xem hai cụm từ được nối lại có hợp lý và có nghĩa không."},
-                {"role": "user", "content": f"""Hãy đánh giá cụm từ nối sau: '{previous_phrase} -> {current_phrase}' có hợp lý và có nghĩa trong tiếng Việt không?
+                {"role": "user", "content": f"""Hãy đánh giá cụm từ nối sau: '{previous_phrase}' -> {current_phrase}' có hợp lý và có nghĩa trong tiếng Việt không?
 Chỉ trả lời một trong hai dòng sau:
 
 - Hợp lý và có nghĩa.
@@ -265,8 +265,6 @@ async def win_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(leaderboard)
 
-  
-
 if __name__ == '__main__':
     TOKEN = "7670306744:AAHIKDeed6h3prNCmkFhFydwrHkxJB5HM6g"  # Thay bằng token bot của bạn
     app = ApplicationBuilder().token(TOKEN).build()
@@ -280,4 +278,3 @@ if __name__ == '__main__':
 
     print("Bot is running...")
     app.run_polling()
-
