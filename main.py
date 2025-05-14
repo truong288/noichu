@@ -41,7 +41,6 @@ Chỉ trả lời một trong hai dòng sau:
     except Exception as e:
         return f"Đã có lỗi khi gọi API: {str(e)}"
 
-
 def reset_game():
     global players, current_phrase, used_phrases, current_player_index, in_game, waiting_for_phrase, turn_timeout_task
     players = []
@@ -132,6 +131,7 @@ async def play_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Kiểm tra nghĩa với AI
     result = await check_meaning(current_phrase, text)
+    print(f"AI Kiểm Tra: {result}")  # Để debug kết quả trả về từ OpenAI
     if result.lower().startswith("không hợp lý") or "không có nghĩa" in result.lower():
         await eliminate_player(update, context, reason="Cụm từ không hợp lý hoặc không có nghĩa. Bạn quá kém!")
         return
