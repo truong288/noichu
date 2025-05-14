@@ -251,7 +251,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/startgame - bắt đầu trò chơi\n/join - tham gia\n/begin - người đầu tiên nhập cụm từ\n/win - Xếp Hạng\n/help - hướng dẫn"
     )
     
-    async def win_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def win_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not win_counts:
         await update.message.reply_text("Chưa có ai chiến thắng trong trò chơi này cả!")
         return
