@@ -6,7 +6,7 @@ import asyncio
 import re
 
 # Cài API OpenAI
-openai.api_key = "YOUR_OPENAI_API_KEY"  # Thêm API Key của bạn vào đây
+openai.api_key = "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 "  # Thay bằng key của bạn
 
 keep_alive()
 
@@ -20,16 +20,23 @@ waiting_for_phrase = False
 turn_timeout_task = None
 win_counts = {}
 
-# Kiểm tra tính hợp lý của từ nối với GPT
+# Sử dụng ChatGPT để kiểm tra nghĩa
 async def check_meaning(previous_phrase, current_phrase):
     try:
-        response = openai.Completion.create(
-            model="text-davinci-003",  # Hoặc GPT-4 nếu có quyền truy cập
-            prompt=f"Kiểm tra xem cụm từ '{previous_phrase} -> {current_phrase}' có hợp lý và có nghĩa không trong ngữ cảnh tiếng Việt.",
-            temperature=0.7,
-            max_tokens=50
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",  # Dùng GPT-4 nếu có thể
+            messages=[
+                {"role": "system", "content": "Bạn là một giáo viên nghiêm khắc về ngữ nghĩa tiếng Việt. Nhiệm vụ của bạn là kiểm tra xem hai cụm từ được nối lại có hợp lý và có nghĩa không."},
+                {"role": "user", "content": f"""Hãy đánh giá cụm từ nối sau: '{previous_phrase} -> {current_phrase}' có hợp lý và có nghĩa trong tiếng Việt không?
+Chỉ trả lời một trong hai dòng sau:
+
+- Hợp lý và có nghĩa.
+- Không hợp lý hoặc không có nghĩa."""}
+            ],
+            temperature=0,
+            max_tokens=10
         )
-        result = response.choices[0].text.strip()
+        result = response.choices[0].message['content'].strip()
         return result
     except Exception as e:
         return f"Đã có lỗi khi gọi API: {str(e)}"
@@ -123,9 +130,9 @@ async def play_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await start_turn_timer(context)
         return
 
-    # Kiểm tra tính hợp lý của cụm từ nối trước khi tiếp tục
+    # Kiểm tra nghĩa với AI
     result = await check_meaning(current_phrase, text)
-    if "không hợp lý" in result or "không có nghĩa" in result:
+    if result.lower().startswith("không hợp lý") or "không có nghĩa" in result.lower():
         await eliminate_player(update, context, reason="Cụm từ không hợp lý hoặc không có nghĩa. Bạn quá kém!")
         return
 
@@ -143,7 +150,7 @@ async def play_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if len(players) == 1:
         winner_id = players[0]
-        win_counts[winner_id] = win_counts.get(winner_id, 0) + 1  # Cộng vào số lần thắng
+        win_counts[winner_id] = win_counts.get(winner_id, 0) + 1
         chat = await context.bot.get_chat(winner_id)
         mention = f"<a href='tg://user?id={winner_id}'>@{chat.username or chat.first_name}</a>"
         await update.message.reply_text(
@@ -157,7 +164,7 @@ async def play_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
     next_mention = f"<a href='tg://user?id={next_id}'>@{next_chat.username or next_chat.first_name}</a>"
 
     await update.message.reply_text(
-        f"✅ Hợp lệ! \u2003\u2003 Nối tiếp từ: '{text.split()[-1]}'. Tới lượt bạn! {next_mention} ",
+        f"✅ Hợp lệ! \u2003\u2003 Nối tiếp từ: '{text.split()[-1]}'. Tới lượt bạn! {next_mention}",
         parse_mode="HTML")
     await start_turn_timer(context)
 
@@ -166,7 +173,7 @@ async def eliminate_player(update, context, reason):
     global players, current_player_index, current_phrase
     user = update.effective_user
     await update.message.reply_text(f"❌ {user.first_name} bị loại! Lý do: {reason}")
-    
+
     eliminated_index = players.index(user.id)
     players.remove(user.id)
 
@@ -178,7 +185,7 @@ async def eliminate_player(update, context, reason):
 
     if len(players) == 1:
         winner_id = players[0]
-        win_counts[winner_id] = win_counts.get(winner_id, 0) + 1  # Thêm thống kê chiến thắng
+        win_counts[winner_id] = win_counts.get(winner_id, 0) + 1
         chat = await context.bot.get_chat(winner_id)
         mention = f"<a href='tg://user?id={winner_id}'>@{chat.username or chat.first_name}</a>"
         await update.message.reply_text(
@@ -232,21 +239,45 @@ async def turn_timer(context):
         pass
 
 
+async def start_turn_timer(context):
+    global turn_timeout_task
+    if turn_timeout_task:
+        turn_timeout_task.cancel()
+    turn_timeout_task = asyncio.create_task(turn_timer(context))
+
+
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "/startgame - bắt đầu trò chơi\n/join - tham gia\n/begin - người đầu tiên nhập cụm từ\n/help - hướng dẫn"
+        "/startgame - bắt đầu trò chơi\n/join - tham gia\n/begin - người đầu tiên nhập cụm từ\n/win - Xếp Hạng\n/help - hướng dẫn"
     )
+    
+    async def win_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not win_counts:
+        await update.message.reply_text("Chưa có ai chiến thắng trong trò chơi này cả!")
+        return
 
+    sorted_winners = sorted(win_counts.items(), key=lambda x: x[1], reverse=True)
+    leaderboard = "🏆 BẢNG XẾP HẠNG CHIẾN THẮNG:\n"
+    for idx, (user_id, count) in enumerate(sorted_winners, start=1):
+        chat = await context.bot.get_chat(user_id)
+        name = chat.username or chat.first_name
+        leaderboard += f"{idx}. {name}: {count} lần thắng\n"
+
+    await update.message.reply_text(leaderboard)
+
+  
 
 if __name__ == '__main__':
-    TOKEN = "7670306744:AAHIKDeed6h3prNCmkFhFydwrHkxJB5HM6g"
+    TOKEN = "7670306744:AAHIKDeed6h3prNCmkFhFydwrHkxJB5HM6g"  # Thay bằng token bot của bạn
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("startgame", start_game))
     app.add_handler(CommandHandler("join", join_game))
     app.add_handler(CommandHandler("begin", begin_game))
     app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(CommandHandler("win", win_leaderboard))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, play_word))
 
     print("Bot is running...")
     app.run_polling()
+
