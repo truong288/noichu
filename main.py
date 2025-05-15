@@ -2,6 +2,7 @@ import asyncio
 import os
 import re
 from telegram import Update
+from telegram.ext import Application
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -189,31 +190,29 @@ async def win_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(result)
 
 # ==== CHẠY WEBHOOK ====
-if __name__ == '__main__':
-    import logging
-    logging.basicConfig(level=logging.INFO)
+
+if __name__ == "__main__":
+    import asyncio
 
     TOKEN = os.environ.get("BOT_TOKEN")
-    DOMAIN = os.environ.get("WEBHOOK_URL")
+    DOMAIN = "https://noichu-bucw.onrender.com"
+
     app = Application.builder().token(TOKEN).build()
 
-    app.add_handler(CommandHandler("startgame", start_game))
-    app.add_handler(CommandHandler("join", join_game))
-    app.add_handler(CommandHandler("begin", begin_game))
-    app.add_handler(CommandHandler("help", help_command))
-    app.add_handler(CommandHandler("win", win_leaderboard))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, play_word))
+    # Handlers ...
+    # app.add_handler(...)
 
     async def main():
-        # Cài webhook Telegram
         await app.bot.set_webhook(f"{DOMAIN}/webhook")
-
-        # Chạy webhook server
-        await app.run_webhook(
+        await app.initialize()
+        await app.start()
+        await app.updater.start_webhook(
             listen="0.0.0.0",
             port=int(os.environ.get("PORT", 5000)),
-            webhook_path="/webhook",
+            url_path="webhook",  # chỉ dùng nếu version cũ
         )
+        await app.updater.idle()
 
     asyncio.run(main())
+
 
