@@ -1,4 +1,5 @@
 import asyncio
+import os
 import re
 from telegram import Update
 from telegram.ext import (
@@ -6,10 +7,10 @@ from telegram.ext import (
     CommandHandler,
     MessageHandler,
     ContextTypes,
-    filters
+    filters,
 )
 
-# Game state
+# ========== TRẠNG THÁI GAME ==========
 players = []
 current_phrase = ""
 used_phrases = {}
@@ -19,7 +20,7 @@ waiting_for_phrase = False
 turn_timeout_task = None
 win_counts = {}
 
-BAD_WORDS = {"đần", "bần", "ngu", "ngốc", "bò", "dốt", "nát", "chó", "má"}
+BAD_WORDS = {"đần", "bần", "ngu", "ngốc", "bò", "dốt", "nát", "chó","địt","mẹ","mày", "má"}
 
 def reset_game():
     global players, current_phrase, used_phrases, current_player_index, in_game, waiting_for_phrase, turn_timeout_task
@@ -34,12 +35,12 @@ def reset_game():
         turn_timeout_task = None
 
 def is_vietnamese(text):
-    return bool(re.search(r'[àáạảãâầấậẩẫăằắặẳẵêèéẹẻẽềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡ'
-                          r'ùúụủũưừứựửữỳýỵỷỹđ]', text))
+    return bool(re.search(r'[àáạảãâầấậẩẫăằắặẳẵêèéẹẻẽềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]', text))
 
 def contains_bad_word(phrase):
     return any(bad in phrase.split() for bad in BAD_WORDS)
 
+# ========== CÁC LỆNH ==========
 async def start_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reset_game()
     global in_game
@@ -104,7 +105,6 @@ async def play_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await eliminate_player(update, context, reason="Không đúng từ nối.")
         return
 
-    # Hợp lệ
     used_phrases[text] = 1
     current_phrase = text
     waiting_for_phrase = False
@@ -164,14 +164,6 @@ async def eliminate_player(update, context, reason):
         )
         await start_turn_timer(context)
 
-async def turn_timer(context):
-    await asyncio.sleep(59)
-    user_id = players[current_player_index]
-    chat = await context.bot.get_chat(user_id)
-    mention = f"<a href='tg://user?id={user_id}'>@{chat.username or chat.first_name}</a>"
-    await context.bot.send_message(chat_id=context._chat_id, text=f"⏰ {mention} hết thời gian và bị loại!", parse_mode="HTML")
-    await eliminate_player_by_id(context, user_id)
-
 async def eliminate_player_by_id(context, user_id):
     global current_player_index
     if user_id in players:
@@ -189,6 +181,14 @@ async def eliminate_player_by_id(context, user_id):
             reset_game()
         else:
             await start_turn_timer(context)
+
+async def turn_timer(context):
+    await asyncio.sleep(59)
+    user_id = players[current_player_index]
+    chat = await context.bot.get_chat(user_id)
+    mention = f"<a href='tg://user?id={user_id}'>@{chat.username or chat.first_name}</a>"
+    await context.bot.send_message(chat_id=context._chat_id, text=f"⏰ {mention} hết thời gian và bị loại!", parse_mode="HTML")
+    await eliminate_player_by_id(context, user_id)
 
 async def start_turn_timer(context):
     global turn_timeout_task
@@ -218,8 +218,15 @@ async def win_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(leaderboard)
 
+# ========== CHẠY VỚI WEBHOOK ==========
 if __name__ == '__main__':
+    import logging
+
+    logging.basicConfig(level=logging.INFO)
+
     TOKEN = "7670306744:AAHIKDeed6h3prNCmkFhFydwrHkxJB5HM6g"
+    DOMAIN = "https://noichu-bucw.onrender.com"  # <-- Thay bằng URL Render của bạn
+
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("startgame", start_game))
@@ -229,5 +236,15 @@ if __name__ == '__main__':
     app.add_handler(CommandHandler("win", win_leaderboard))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, play_word))
 
-    print("Bot is running...")
-    app.run_polling()
+    async def main():
+        await app.bot.set_webhook(f"{DOMAIN}/webhook")
+        await app.start()
+        await app.updater.start_webhook(
+            listen="0.0.0.0",
+            port=int(os.environ.get("PORT", 5000)),
+            url_path="webhook",
+            webhook_url=f"{DOMAIN}/webhook"
+        )
+        await app.updater.idle()
+
+    asyncio.run(main())
