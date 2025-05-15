@@ -193,8 +193,8 @@ if __name__ == '__main__':
     import logging
     logging.basicConfig(level=logging.INFO)
 
-    TOKEN = os.environ.get("7670306744:AAHIKDeed6h3prNCmkFhFydwrHkxJB5HM6g")
-    DOMAIN = os.environ.get("https://noichu-bucw.onrender.com")
+    TOKEN = os.environ.get("BOT_TOKEN")
+    DOMAIN = os.environ.get("WEBHOOK_URL")
     app = Application.builder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("startgame", start_game))
