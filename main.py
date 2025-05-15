@@ -193,10 +193,10 @@ if __name__ == '__main__':
     import logging
     logging.basicConfig(level=logging.INFO)
 
-    TOKEN = "7670306744:AAHIKDeed6h3prNCmkFhFydwrHkxJB5HM6g"  # <<< Đặt token của bạn tại đây
-    DOMAIN = "https://noichu-bucw.onrender.com"
+    TOKEN = os.environ.get("BOT_TOKEN") or "7670306744:AAHIKDeed6h3prNCmkFhFydwrHkxJB5HM6g"
+    DOMAIN = os.environ.get("WEBHOOK_URL") or "https://noichu-bucw.onrender.com"
 
-    app = Application.builder().token(TOKEN).build()  # Khởi tạo đúng cách với Application
+    app = Application.builder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("startgame", start_game))
     app.add_handler(CommandHandler("join", join_game))
@@ -206,12 +206,15 @@ if __name__ == '__main__':
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, play_word))
 
     async def main():
+        # Cài webhook Telegram
         await app.bot.set_webhook(f"{DOMAIN}/webhook")
-        await app.start()
-        await app.updater.start_webhook(
+
+        # Chạy webhook server
+        await app.run_webhook(
             listen="0.0.0.0",
             port=int(os.environ.get("PORT", 5000)),
-            url_path="webhook",
+            webhook_path="/webhook",
         )
 
     asyncio.run(main())
+
