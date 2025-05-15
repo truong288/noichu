@@ -4,6 +4,5 @@ services:
     env: python
     buildCommand: "pip install -r requirements.txt"
     startCommand: "python main.py"
-    healthCheckPath: "/"
     autoDeploy: true
-    port: 5000  # Đảm bảo Render sử dụng đúng cổng
+
