@@ -1,8 +1,10 @@
 services:
   - type: web
-    name: noichu
+    name: telegram-bot
     env: python
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "python main.py"
-    autoDeploy: true
-
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:flask_app
+    plan: free
+    envVars:
+      - key: BOT_TOKEN
+        value: 7670306744:AAHIKDeed6h3prNCmkFhFydwrHkxJB5HM6g
