@@ -248,7 +248,7 @@ async def turn_timeout(context):
 
 # Main entry point to set up the bot
 async def main():
-    app = ApplicationBuilder().token("YOUR_BOT_TOKEN").build()
+    app = ApplicationBuilder().token("7670306744:AAHIKDeed6h3prNCmkFhFydwrHkxJB5HM6g").build()
 
     # Command Handlers
     app.add_handler(CommandHandler("start", start_game))
