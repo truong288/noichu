@@ -1,4 +1,5 @@
 from telegram import Update
+nest_asyncio.apply()
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 import asyncio
 import re
@@ -192,7 +193,7 @@ async def play_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         f"✅ Hợp lệ!\n\n"
         f"🔄 Lượt chơi tiếp theo\n"
-        f"👉 Từ cần nói: [{current_word}]\n"
+        f"👉 Từ cần nói: [\u2003{current_word}\u2003]\n"
         f"👤 Người chơi: {next_mention}\n"
         f"⏳ Thời gian:  giây",
         parse_mode="HTML")
@@ -245,7 +246,7 @@ async def turn_timeout(context):
 
 # Main entry point to set up the bot
 async def main():
-    app = ApplicationBuilder().token("7670306744:AAHIKDeed6h3prNCmkFhFydwrHkxJB5HM6g").build()
+    app = ApplicationBuilder().token("YOUR_BOT_TOKEN").build()
 
     # Command Handlers
     app.add_handler(CommandHandler("start", start_game))
@@ -254,12 +255,12 @@ async def main():
     app.add_handler(CommandHandler("win", show_stats))
     app.add_handler(CommandHandler("reset", reset))
 
-    # Message Handler for words
+    # Message Handler cho từ
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, play_word))
 
-    # Run the bot
+    # Chạy bot
     await app.run_polling()
 
-# Start the bot
+# Khởi chạy bot
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(main()) 
