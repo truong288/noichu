@@ -3,6 +3,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, Con
 from stay_alive import keep_alive
 import asyncio
 import re
+from collections import defaultdict
 
 keep_alive()
 
@@ -14,6 +15,7 @@ current_player_index = 0
 in_game = False
 waiting_for_phrase = False
 turn_timeout_task = None
+win_counts = defaultdict(int)  # Track win counts
 
 # Banned words list
 BANNED_WORDS = {"đần", "bần", "ngu", "ngốc", "bò", "dốt", "nát", "chó", "địt", "mẹ", "mày", "má"}
@@ -32,16 +34,11 @@ def reset_game():
         turn_timeout_task = None
 
 
-def is_vietnamese(text):
-    # Check if text contains Vietnamese characters
-    vietnamese_chars = bool(re.search(r'[àáạảãâầấậẩẫăằắặẳẵêèéẹẻẽềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡ'
-                          r'ùúụủũưừứựửữỳýỵỷỹđ]', text.lower()))
-    
-    # Also check if it contains numbers or English (basic check)
+def contains_invalid_chars(text):
+    # Check if text contains numbers or English letters
     has_numbers = bool(re.search(r'\d', text))
     has_english = bool(re.search(r'[a-zA-Z]', text))
-    
-    return vietnamese_chars and not has_numbers and not has_english
+    return has_numbers or has_english
 
 
 def contains_banned_words(text):
@@ -49,14 +46,36 @@ def contains_banned_words(text):
     return any(word in BANNED_WORDS for word in words)
 
 
+async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not win_counts:
+        await update.message.reply_text("📊 Chưa có thống kê chiến thắng nào!")
+        return
+    
+    stats = ["📊 THỐNG KÊ CHIẾN THẮNG:"]
+    for user_id, count in sorted(win_counts.items(), key=lambda x: x[1], reverse=True):
+        try:
+            chat = await context.bot.get_chat(user_id)
+            name = chat.username or chat.first_name
+            stats.append(f"🏆 {name}: {count} lần")
+        except:
+            continue
+    
+    await update.message.reply_text("\n".join(stats))
+
+
 async def start_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reset_game()
     global in_game
     in_game = True
 
-    await update.message.reply_text("🎮 Trò chơi bắt đầu!\n"
-                                   "👉 Gõ /join Để tham gia.\n"
-                                   "👉 Gõ /begin Để bắt đầu chơi.")
+    await update.message.reply_text("🎮 Trò chơi Nối Chữ bắt đầu!\n"
+                                  "👉 Gõ /join để tham gia\n"
+                                  "👉 Gõ /begin để bắt đầu\n"
+                                  "👉 Gõ /stats để xem thống kê\n\n"
+                                  "📌 Luật chơi:\n"
+                                  "- Nhập cụm từ 2 từ tiếng Việt\n"
+                                  "- Không dùng số/tiếng Anh/từ cấm\n"
+                                  "- Có 59 giây cho mỗi lượt")
 
 
 async def join_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -82,13 +101,13 @@ async def begin_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     mention = f"<a href='tg://user?id={user_id}'>@{chat.username or chat.first_name}</a>"
 
     await update.message.reply_text(
-        f"✏️ {mention}, Hãy nhập cụm từ đầu tiên để bắt đầu trò chơi!",
+        f"✏️ {mention}, Hãy nhập cụm từ đầu tiên!",
         parse_mode="HTML")
     await start_turn_timer(context)
 
 
 async def play_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global current_phrase, current_player_index, used_phrases, players, in_game, waiting_for_phrase, turn_timeout_task
+    global current_phrase, current_player_index, used_phrases, players, in_game, waiting_for_phrase, turn_timeout_task, win_counts
 
     if not in_game:
         return
@@ -99,8 +118,8 @@ async def play_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user.id != players[current_player_index]:
         return
 
-    if not is_vietnamese(text):
-        await eliminate_player(update, context, reason="Dùng tiếng Việt ")
+    if contains_invalid_chars(text):
+        await eliminate_player(update, context, reason="Không hợp lệ ")
         return
 
     word_count = len(text.split())
@@ -147,10 +166,13 @@ async def play_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if len(players) == 1:
         winner_id = players[0]
+        win_counts[winner_id] += 1  # Increment win count
         chat = await context.bot.get_chat(winner_id)
         mention = f"<a href='tg://user?id={winner_id}'>@{chat.username or chat.first_name}</a>"
-        await update.message.reply_text(f"🏆 {mention} Vô Địch Nối CHỮ!🏆🏆",
-                                      parse_mode="HTML")
+        await update.message.reply_text(
+            f"🏆 {mention} Vô Địch Nối CHỮ! 🏆\n"
+            f"📊 Số lần chiến thắng: {win_counts[winner_id]}",
+            parse_mode="HTML")
         reset_game()
         return
 
@@ -170,7 +192,7 @@ async def play_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def eliminate_player(update, context, reason):
-    global players, current_player_index
+    global players, current_player_index, win_counts
     user = update.effective_user
     await update.message.reply_text(
         f"❌ {user.first_name} bị loại! Lý do: {reason}")
@@ -180,10 +202,13 @@ async def eliminate_player(update, context, reason):
 
     if len(players) == 1:
         winner_id = players[0]
+        win_counts[winner_id] += 1  # Increment win count
         chat = await context.bot.get_chat(winner_id)
-        mention = f"<a href='tg://user?id={winner_id}'>@{chat.username or chat.first_name}</a>"
-        await update.message.reply_text(f"🏆 {mention} Vô Địch Nối CHỮ!🏆🏆",
-                                      parse_mode="HTML")
+        mention = f"<a href='tg://user?id={winner_id}">@{chat.username or chat.first_name}</a>"
+        await update.message.reply_text(
+            f"🏆 {mention} Vô Địch Nối CHỮ! 🏆\n"
+            f"📊 Số lần chiến thắng: {win_counts[winner_id]}",
+            parse_mode="HTML")
         reset_game()
     else:
         await update.message.reply_text(
@@ -212,7 +237,7 @@ async def start_turn_timer(context):
 
 
 async def turn_timer(context):
-    global players, current_player_index
+    global players, current_player_index, win_counts
     try:
         await asyncio.sleep(59)
         user_id = players[current_player_index]
@@ -227,11 +252,13 @@ async def turn_timer(context):
 
         if len(players) == 1:
             winner_id = players[0]
+            win_counts[winner_id] += 1  # Increment win count
             winner_chat = await context.bot.get_chat(winner_id)
             mention = f"<a href='tg://user?id={winner_id}'>@{winner_chat.username or winner_chat.first_name}</a>"
             await context.bot.send_message(
                 chat_id=context._chat_id,
-                text=f"🏆 {mention} Vô Địch Nối CHỮ!🏆🏆",
+                text=f"🏆 {mention} Vô Địch Nối CHỮ! 🏆\n"
+                     f"📊 Số lần chiến thắng: {win_counts[winner_id]}",
                 parse_mode="HTML")
             reset_game()
             return
@@ -260,13 +287,15 @@ async def turn_timer(context):
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "/startgame - Bắt đầu trò chơi\n/join - Tham gia\n/begin - Người đầu tiên nhập cụm từ\n/help - Hướng dẫn\n\n"
+        "📌 Các lệnh:\n"
+        "/startgame - Bắt đầu trò chơi\n"
+        "/join - Tham gia\n"
+        "/begin - Bắt đầu chơi\n"
+        "/stats - Xem thống kê chiến thắng\n"
+        "/help - Hướng dẫn\n\n"
         "📌 Luật chơi:\n"
-        "- Mỗi cụm từ phải gồm 2 từ tiếng Việt\n"
-        "- Phải nối từ cuối của cụm từ trước\n"
-        "- Không được lặp lại cụm từ\n"
-        "- Không sử dụng từ cấm\n"
-        "- Không dùng số hoặc tiếng Anh\n"
+        "- Nhập cụm từ 2 từ tiếng Việt\n"
+        "- Không dùng số/tiếng Anh/từ cấm\n"
         "- Có 59 giây cho mỗi lượt"
     )
 
@@ -278,8 +307,6 @@ if __name__ == '__main__':
     app.add_handler(CommandHandler("startgame", start_game))
     app.add_handler(CommandHandler("join", join_game))
     app.add_handler(CommandHandler("begin", begin_game))
+    app.add_handler(CommandHandler("stats", show_stats))
     app.add_handler(CommandHandler("help", help_command))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, play_word))
-
-    print("Bot is running...")
-    app.run_polling()
+    app.add_handler(MessageHandler(filters.TEXT &
