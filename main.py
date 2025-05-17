@@ -1,7 +1,6 @@
 import nest_asyncio
 nest_asyncio.apply()
 from telegram import Update
-nest_asyncio.apply()
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 import asyncio
 import re
@@ -197,7 +196,7 @@ async def play_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🔄 Lượt chơi tiếp theo\n"
         f"👉 Từ cần nói: [\u2003{current_word}\u2003]\n"
         f"👤 Người chơi: {next_mention}\n"
-        f"⏳ Thời gian:  giây",
+        f"⏳ Thời gian: 60 giây",
         parse_mode="HTML")
     await start_turn_timer(context)
 
@@ -225,10 +224,10 @@ async def eliminate_player(update, context, reason):
 
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text=f"Lượt chơi tiếp theo\n"
-                 f"Từ cần nói: [{current_word}]\n"
+            text=f"🔄Lượt chơi tiếp theo\n"
+                 f"👉Từ cần nói: [\u2003{current_word}\u2003]\n"
                  f"Người chơi: {next_mention}\n"
-                 f"Thời gian: 59 giây",
+                 f"👤Thời gian: 60 giây",
             parse_mode="HTML")
         await start_turn_timer(context)
 
@@ -248,7 +247,7 @@ async def turn_timeout(context):
 
 # Main entry point to set up the bot
 async def main():
-    app = ApplicationBuilder().token("7670306744:AAHIKDeed6h3prNCmkFhFydwrHkxJB5HM6g").build()
+    app = ApplicationBuilder().token("YOUR_BOT_TOKEN").build()
 
     # Command Handlers
     app.add_handler(CommandHandler("start", start_game))
@@ -265,4 +264,6 @@ async def main():
 
 # Khởi chạy bot
 if __name__ == "__main__":
-    asyncio.run(main()) 
+    # Instead of asyncio.run, we use the current loop to run the main function
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
