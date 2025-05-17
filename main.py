@@ -55,9 +55,14 @@ async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def is_vietnamese(text):
     text = text.strip().lower()
-    if re.search(r'[0-9a-z]', text):  # Không chứa số hoặc tiếng Anh
+    if len(text.split()) != 2:
         return False
-    return len(text.split()) == 2
+    if re.search(r'[0-9]', text):  # Không được có số
+        return False
+    if re.search(r'[a-zA-Z]', text) and not re.search(r'[à-ỹ]', text):  # Có ký tự tiếng Anh không dấu thì loại
+        return False
+    return True
+
 
 def contains_banned_words(text):
     words = text.lower().split()
