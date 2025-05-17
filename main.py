@@ -243,6 +243,7 @@ async def start_turn_timer(context):
 async def turn_timeout(context):
     await asyncio.sleep(60)
     if len(players) > 1:
+        # Gửi thông báo về hết thời gian và loại người chơi
         await eliminate_player(update, context, reason="Hết thời gian")
 
 # Main entry point to set up the bot
