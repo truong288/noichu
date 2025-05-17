@@ -101,7 +101,7 @@ async def begin_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     mention = f"<a href='tg://user?id={user_id}'>@{chat.username or chat.first_name}</a>"
 
     await update.message.reply_text(
-        f"✏️ {mention}, Hãy nhập cụm từ đầu tiên!",
+        f"✏️ {mention}, hãy nhập cụm từ đầu tiên gồm 2 từ tiếng Việt!",
         parse_mode="HTML")
     await start_turn_timer(context)
 
@@ -119,7 +119,7 @@ async def play_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     if contains_invalid_chars(text):
-        await eliminate_player(update, context, reason="Không hợp lệ ")
+        await eliminate_player(update, context, reason="Không được dùng số hoặc tiếng Anh")
         return
 
     word_count = len(text.split())
@@ -204,7 +204,7 @@ async def eliminate_player(update, context, reason):
         winner_id = players[0]
         win_counts[winner_id] += 1  # Increment win count
         chat = await context.bot.get_chat(winner_id)
-        mention = f"<a href='tg://user?id={winner_id}">@{chat.username or chat.first_name}</a>"
+        mention = f"<a href='tg://user?id={winner_id}'>@{chat.username or chat.first_name}</a>"
         await update.message.reply_text(
             f"🏆 {mention} Vô Địch Nối CHỮ! 🏆\n"
             f"📊 Số lần chiến thắng: {win_counts[winner_id]}",
@@ -301,7 +301,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 if __name__ == '__main__':
-    TOKEN = "7670306744:AAHIKDeed6h3prNCmkFhFydwrHkxJB5HM6g"
+    TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("startgame", start_game))
@@ -309,4 +309,7 @@ if __name__ == '__main__':
     app.add_handler(CommandHandler("begin", begin_game))
     app.add_handler(CommandHandler("stats", show_stats))
     app.add_handler(CommandHandler("help", help_command))
-    app.add_handler(MessageHandler(filters.TEXT &
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, play_word))
+
+    print("Bot is running...")
+    app.run_polling()
