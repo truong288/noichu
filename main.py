@@ -265,6 +265,4 @@ async def main():
 
 # Khởi chạy bot
 if __name__ == "__main__":
-    # Instead of asyncio.run, we use the current loop to run the main function
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    asyncio.run(main())
