@@ -117,7 +117,7 @@ async def begin_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = players[current_player_index]
     user = await context.bot.get_chat(user_id)
     await update.message.reply_text(
-        f"✏️ {get_player_name(user)}, hãy nhập cụm từ đầu tiên (2 từ tiếng Việt):\n"
+        f"✏️ {get_player_name(user)}, Hãy nhập cụm từ đầu tiên:...\n"
         f"⏰ Bạn có: 60 giây"
     )
     await start_turn_timer(context)
@@ -138,7 +138,7 @@ async def play_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip().lower()
 
     if not is_vietnamese(text):
-        await eliminate_player(update, context, "Phải nhập đúng 2 từ tiếng Việt")
+        await eliminate_player(update, context, "Không hợp lệ ")
         return
 
     if contains_banned_words(text):
