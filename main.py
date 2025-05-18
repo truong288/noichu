@@ -272,7 +272,7 @@ async def turn_timer(context):
         
         await context.bot.send_message(
             chat_id=context._chat_id,
-            text=f"⏰ {user_name} Hết giờ: Loại!
+            text=f"⏰ {user_name} Hết giờ: Loại!"
         )
         
         eliminated_index = current_player_index
