@@ -19,7 +19,7 @@ waiting_for_phrase = False
 turn_timeout_task = None
 
 # Banned words
-BANNED_WORDS = {"đần", "bần", "ngu", "ngốc", "bò", "dốt", "nát", "chó", "địt", "mẹ", "mày", "má"}
+BANNED_WORDS = {"đần", "bần", "ngu", "ngốc", "bò", "dốt", "nát", "chó", "địt", "mẹ", "mày","chi","mô","răng","rứa", "má"}
 
 # Stats
 STATS_FILE = "winners.json"
