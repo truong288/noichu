@@ -189,7 +189,7 @@ async def process_valid_word(update, context, text, is_first_word=False):
         f"🔄 Lượt tiếp theo:\n"
         f"👉 Từ cần nối: 『{current_word}』\n"
         f"👤 Người chơi: {get_player_name(next_user)}\n"
-        f"⏳ Thời gian: 60 giây (đến {get_current_time()})"
+        f"⏳ Thời gian: 60 giây "
     )
     
     await start_turn_timer(context)
@@ -223,7 +223,7 @@ async def eliminate_player(update, context, reason):
         f"🔄 Lượt tiếp theo:\n"
         f"👉 Từ cần nối: 『{current_word}』\n"
         f"👤 Người chơi: {get_player_name(next_user)}\n"
-        f"⏳ Thời gian: 60 giây (đến {get_current_time()})"
+        f"⏳ Thời gian: 60 giây "
     )
     await start_turn_timer(context)
 
@@ -246,9 +246,8 @@ async def announce_winner(update, context):
     await context.bot.send_message(
         chat_id=update.effective_chat.id if update else context._chat_id,
         text=f"🏆 CHIẾN THẮNG! 🏆\n"
-             f"👑 {winner_name} Vô Địch Nối Chữ!\n"
-             f"⏱️ Thời gian chơi: {game_start_time} - {get_current_time()}\n"
-             f"📊 Số lần thắng: {stats[winner_name]}"
+             f"👑 {winner_name}:\u2003\u2003 Vô Địch Nối Chữ!\n"
+             f"📊 Số lần thắng:\u2003 {stats[winner_name]}"
     )
     reset_game_state()
 
@@ -273,7 +272,7 @@ async def turn_timer(context):
         
         await context.bot.send_message(
             chat_id=context._chat_id,
-            text=f"⏰ {user_name} Hết giờ: Loại! {get_current_time()}"
+            text=f"⏰ {user_name} Hết giờ: Loại!
         )
         
         eliminated_index = current_player_index
@@ -296,7 +295,7 @@ async def turn_timer(context):
                  f"🔄 Lượt tiếp theo:\n"
                  f"👉 Từ cần nối: 『{current_word}』\n"
                  f"👤 Người chơi: {get_player_name(next_user)}\n"
-                 f"⏳ Thời gian: 60 giây (đến {get_current_time()})"
+                 f"⏳ Thời gian: 60 giây "
         )
         await start_turn_timer(context)
             
