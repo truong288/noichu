@@ -6,12 +6,15 @@ import re
 import json
 import os
 from datetime import datetime
+import openpyxl
 
 keep_alive()
 
 # Game state
-players = []
-player_names = {}
+players = []  # lưu user.id
+player_names = {}  # user.id -> Tên hiển thị
+player_usernames = {}  # user.id -> username
+player_join_times = {}  # user.id -> thời gian join
 current_phrase = ""
 used_phrases = {}
 current_player_index = 0
@@ -21,7 +24,7 @@ turn_timeout_task = None
 game_start_time = None
 
 # Banned words
-BANNED_WORDS = {"đần", "bần", "ngu", "ngốc", "bò", "dốt", "nát", "chó", "địt", "mẹ", "mày","chi","mô","răng","rứa", "má"}
+BANNED_WORDS = {"đần", "bần", "ngu", "ngốc", "bò", "dốt", "nát", "chó", "địt", "mẹ", "mày","chi","mô","răng","rứa", "má", "lồn", "lòn", "cứt"}
 
 # Stats
 STATS_FILE = "winners.json"
@@ -39,9 +42,11 @@ def save_stats(data):
 stats = load_stats()
 
 def reset_game_state():
-    global players, player_names, current_phrase, used_phrases, current_player_index, in_game, waiting_for_phrase, turn_timeout_task, game_start_time
+    global players, player_names, player_usernames, player_join_times, current_phrase, used_phrases, current_player_index, in_game, waiting_for_phrase, turn_timeout_task, game_start_time
     players = []
     player_names = {}
+    player_usernames = {}
+    player_join_times = {}
     current_phrase = ""
     used_phrases = {}
     current_player_index = 0
@@ -59,13 +64,21 @@ async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_stats(stats)
     await update.message.reply_text("✅ Trò chơi và bảng xếp hạng đã được reset!")
 
+# Hàm kiểm tra 2 từ tiếng Việt hợp lệ
 def is_vietnamese(text):
-    text = text.strip().lower()
-    if len(text.split()) != 2:
+    text = text.strip()
+    words = text.split()
+    if len(words) != 2:
         return False
+    # Không chứa số
     if re.search(r'[0-9]', text):
         return False
-    if re.search(r'[a-zA-Z]', text) and not re.search(r'[à-ỹ]', text):
+    # Không chứa chữ latin không dấu (a-z) riêng biệt (không tính các chữ có dấu)
+    # Kiểm tra toàn bộ các ký tự phải thuộc bảng Unicode tiếng Việt có dấu hoặc space
+    # Dùng regex gồm chữ thường tiếng vi có dấu
+    # https://stackoverflow.com/questions/19289098/regex-to-match-vietnamese-characters
+    vietnamese_pattern = r'^[a-zA-Zàáảãạâầấẩẫậăằắẳẵặèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ\s]+$'
+    if not re.match(vietnamese_pattern, text.lower()):
         return False
     return True
 
@@ -81,6 +94,14 @@ def get_player_name(user):
         name += f" {user.last_name}"
     player_names[user.id] = name
     return name
+
+def get_player_username(user):
+    # username có thể None
+    if user.username:
+        player_usernames[user.id] = user.username
+        return user.username
+    else:
+        return "(chưa có username)"
 
 def get_current_time():
     return datetime.now().strftime("%H:%M")
@@ -102,6 +123,8 @@ async def join_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user.id not in players:
         players.append(user.id)
         get_player_name(user)
+        get_player_username(user)
+        player_join_times[user.id] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         await update.message.reply_text(f"✅ {get_player_name(user)} Đã tham gia! (Tổng: {len(players)} Ng)")
     else:
         await update.message.reply_text("⚠️ Bạn đã tham gia rồi!")
@@ -138,11 +161,11 @@ async def play_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip().lower()
 
     if not is_vietnamese(text):
-        await eliminate_player(update, context, "Không hợp lệ ")
+        await eliminate_player(update, context, "Không hợp lệ: Cụm từ phải gồm 2 từ tiếng Việt, không chứa số hay chữ tiếng Anh!")
         return
 
     if contains_banned_words(text):
-        await eliminate_player(update, context, "Không hợp lệ")
+        await eliminate_player(update, context, "Không hợp lệ: Có từ cấm!")
         return
 
     if waiting_for_phrase:
@@ -323,19 +346,41 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🔹 /join - Tham gia trò chơi\n"
         "🔹 /begin - Bắt đầu khi đủ người\n"
         "🔹 /win - Xem bảng xếp hạng\n"
-        "🔹 /reset - Reset trò chơi\n"
         "🔹 /help - Xem hướng dẫn\n\n"
         "📌 LUẬT CHƠI:\n"
-        "- Mỗi cụm từ gồm 2 từ tiếng Việt\n"
-        "- Nối từ cuối của cụm trước đó\n"
-        "- Không lặp lại cụm từ đã dùng\n"
-        "- Không dùng từ cấm hoặc không phù hợp\n"
-        "- Mỗi lượt có 60 giây để trả lời\n"
+        "- Mỗi cụm từ gồm 2 từ.\n"
+        "- Nối từ cuối của cụm trước đó.\n"
+        "- Không lặp lại cụm từ đã dùng.\n"
+        "- Không dùng từ không phù hợp.\n"
+        "- Mỗi lượt có 60 giây để trả lời.\n"
         "- Người cuối cùng còn lại sẽ chiến thắng!"
     )
 
+# Lệnh xuất danh sách người chơi ra Excel
+async def export_players(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not players:
+        await update.message.reply_text("❌ Chưa có người chơi nào tham gia!")
+        return
+    
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Danh sách người chơi"
+    ws.append(["Tên người chơi", "Username", "Telegram ID", "Thời gian tham gia"])
+    
+    for user_id in players:
+        name = player_names.get(user_id, "Không rõ")
+        username = player_usernames.get(user_id, "(chưa có username)")
+        join_time = player_join_times.get(user_id, "Không rõ")
+        ws.append([name, username, user_id, join_time])
+    
+    filename = "danh_sach_nguoi_choi.xlsx"
+    wb.save(filename)
+    
+    with open(filename, "rb") as f:
+        await update.message.reply_document(document=f, filename=filename)
+
 if __name__ == '__main__':
-    TOKEN = "7670306744:AAHIKDeed6h3prNCmkFhFydwrHkxJB5HM6g"  # Thay bằng token thật
+    TOKEN = "7670306744:AAHIKDeed6h3prNCmkFhFydwrHkxJB5HM6g"  # 
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("startgame", start_game))
@@ -344,6 +389,7 @@ if __name__ == '__main__':
     app.add_handler(CommandHandler("win", show_stats))
     app.add_handler(CommandHandler("reset", reset))
     app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(CommandHandler("export", export_players))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, play_word))
     
     print("Bot đang chạy...")
