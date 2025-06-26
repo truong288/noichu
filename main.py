@@ -318,7 +318,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "- Không lặp lại cụm từ đã dùng.\n"
         "- Không dùng từ không phù hợp.\n"
         "- Mỗi lượt có 60 giây để trả lời.\n"
-        "- Người cuối cùng còn lại sẽ chiến thắng!"
+        "- Người cuối cùng còn lại sẽ chiến thắng.!\n"
         "- @xukaxuka2k1 code free,export,clearfile!"
     )
 
