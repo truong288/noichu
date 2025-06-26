@@ -112,7 +112,7 @@ async def begin_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     current_player_index = 0
     user = await context.bot.get_chat(players[current_player_index])
     await update.message.reply_text(
-        f"✏️ {get_player_name(user)}, hãy nhập cụm từ bắt đầu (2 từ, có dấu):\n⏰ 60 giây"
+        f"✏️ {get_player_name(user)}, Hãy nhập cụm từ bắt đầu:\n⏰ 60 giây"
     )
     await start_turn_timer(context)
 
@@ -319,7 +319,7 @@ async def export_players_to_excel(update: Update, context: ContextTypes.DEFAULT_
 # ==== Khởi động Bot ====
 
 if __name__ == '__main__':
-    TOKEN = "7670306744:AAHIKDeed6h3prNCmkFhFydwrHkxJB5HM6g"  # 👉 Đổi thành token thật
+    TOKEN = "7670306744:AAHIKDeed6h3prNCmkFhFydwrHkxJB5HM6g"  # 👉 
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("startgame", start_game))
