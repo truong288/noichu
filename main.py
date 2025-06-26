@@ -393,8 +393,8 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # --- Khởi chạy bot ---
 if __name__ == '__main__':
-    TOKEN = "7670306744:AAHIKDeed6h3prNCmkFhFydwrHkxJB5HM6g"  # 
-        app = ApplicationBuilder().token(TOKEN).build()
+    TOKEN = "7670306744:AAHIKDeed6h3prNCmkFhFydwrHkxJB5HM6g" # 
+    app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("startgame", start_game))
     app.add_handler(CommandHandler("join", join_game))
