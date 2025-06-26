@@ -319,8 +319,8 @@ async def export_players_to_excel(update: Update, context: ContextTypes.DEFAULT_
 # ==== Khởi động Bot ====
 
 if __name__ == '__main__':
-    TOKEN = "7670306744:AAHIKDeed6h3prNCmkFhFydwrHkxJB5HM6g"  
-        app = ApplicationBuilder().token(TOKEN).build()
+    TOKEN = "7670306744:AAHIKDeed6h3prNCmkFhFydwrHkxJB5HM6g"  # 👉 Đổi thành token thật
+    app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("startgame", start_game))
     app.add_handler(CommandHandler("join", join_game))
