@@ -14,6 +14,7 @@ keep_alive()
 # ==== Trạng thái game ====
 players = []
 player_names = {}
+player_usernames = {}
 current_phrase = ""
 used_phrases = {}
 current_player_index = 0
@@ -45,10 +46,11 @@ def save_stats(data):
 stats = load_stats()
 
 def reset_game_state():
-    global players, player_names, current_phrase, used_phrases, current_player_index
+    global players, player_names, player_usernames, current_phrase, used_phrases, current_player_index
     global in_game, waiting_for_phrase, turn_timeout_task, game_start_time
     players.clear()
     player_names.clear()
+    player_usernames.clear()
     used_phrases.clear()
     current_phrase = ""
     current_player_index = 0
@@ -84,6 +86,13 @@ def get_player_name(user):
         player_names[user.id] = name
     return player_names[user.id]
 
+def get_player_username(user):
+    if user.username:
+        player_usernames[user.id] = f"@{user.username}"
+    else:
+        player_usernames[user.id] = ""
+    return player_usernames[user.id]
+
 # ==== Lệnh game ====
 
 async def start_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -101,6 +110,7 @@ async def join_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
         players.append(user.id)
         all_participants.add(user.id)
         get_player_name(user)
+        get_player_username(user)
         await update.message.reply_text(f"✅ {get_player_name(user)} đã tham gia! (Tổng: {len(players)} ng)")
     else:
         await update.message.reply_text("⚠️ Bạn đã tham gia rồi!")
@@ -196,6 +206,7 @@ async def eliminate_player(update, context, reason):
     await update.message.reply_text(f"❌ {name} bị loại! {reason}")
     players.remove(user.id)
 
+    # Nếu còn 1 người chơi sau khi loại, thông báo chiến thắng
     if len(players) == 1:
         await announce_winner(update, context)
         return
@@ -214,7 +225,8 @@ async def eliminate_player(update, context, reason):
 
 async def announce_winner(update, context):
     if not players:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="🏁 Không có người chiến thắng.")
+        if update:
+            await context.bot.send_message(chat_id=update.effective_chat.id, text="🏁 Không có người chiến thắng.")
         reset_game_state()
         return
 
@@ -247,17 +259,23 @@ async def turn_timer(context):
             return
         user_id = players[current_player_index]
         user = await context.bot.get_chat(user_id)
-        await context.bot.send_message(chat_id=context._chat_id, text=f"⏰ {get_player_name(user)} hết giờ và bị loại!")
+        chat_id = context._chat_id if hasattr(context, "_chat_id") else None
+        if chat_id is None:
+            return
+        await context.bot.send_message(chat_id=chat_id, text=f"⏰ {get_player_name(user)} hết giờ và bị loại!")
         players.remove(user_id)
+
+        # Nếu còn 1 người chơi thì thông báo chiến thắng
         if len(players) == 1:
             await announce_winner(None, context)
             return
+
         if current_player_index >= len(players):
             current_player_index = 0
         current_word = current_phrase.split()[-1]
         next_user = await context.bot.get_chat(players[current_player_index])
         await context.bot.send_message(
-            chat_id=context._chat_id,
+            chat_id=chat_id,
             text=f"🔄 Từ cần nối: 『{current_word}』\n👤 Người chơi: {get_player_name(next_user)}\n⏳ 60 giây"
         )
         await start_turn_timer(context)
@@ -285,14 +303,15 @@ async def export_players_to_excel(update: Update, context: ContextTypes.DEFAULT_
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Nguoi choi"
-    headers = ["STT", "Tên người chơi", "Telegram ID"]
+    headers = ["STT", "Tên người chơi", "Telegram ID", "Username"]
     ws.append(headers)
     for cell in ws[1]:
         cell.font = Font(bold=True)
 
     for idx, user_id in enumerate(all_participants, 1):
         name = player_names.get(user_id, f"User {user_id}")
-        ws.append([idx, name, user_id])
+        username = player_usernames.get(user_id, "")
+        ws.append([idx, name, user_id, username])
 
     file_name = "nguoi_choi.xlsx"
     wb.save(file_name)
@@ -312,12 +331,10 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🔹 /startgame - Bắt đầu game\n"
         "🔹 /join - Tham gia\n"
         "🔹 /begin - Bắt đầu chơi\n"
-        "🔹 /export - Xuất danh sách người tham gia\n"
         "🔹 /win - Xem bảng xếp hạng\n"
-        "🔹 /reset - Reset game\n"
         "🔹 /help - Xem hướng dẫn\n\n"
         "📌 Luật:\n"
-        "- Cụm từ 2 từ tiếng Việt có dấu\n"
+        "- Cụm từ 2 từ tiếng Việt\n"
         "- Không lặp lại cụm từ\n"
         "- Không chứa từ cấm\n"
         "- Hết 60s sẽ bị loại\n"
@@ -341,3 +358,4 @@ if __name__ == '__main__':
 
     print("🤖 Bot đang chạy...")
     app.run_polling()
+
