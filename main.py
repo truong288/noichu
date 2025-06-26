@@ -21,11 +21,15 @@ in_game = False
 waiting_for_phrase = False
 turn_timeout_task = None
 game_start_time = None
+all_participants = set()  # Lưu tất cả người từng tham gia
 
 # ==== Từ cấm ====
-BANNED_WORDS = {"đần", "bần", "ngu", "ngốc", "bò", "dốt", "nát", "chó", "địt", "mẹ", "mày", "chi", "mô", "răng", "rứa", "má"}
+BANNED_WORDS = {
+    "đần", "bần", "ngu", "ngốc", "bò", "dốt", "nát", "chó", "địt", "mẹ", "mày",
+    "chi", "mô", "răng", "rứa", "má"
+}
 
-# ==== Thống kê thắng ====
+# ==== File thống kê ====
 STATS_FILE = "winners.json"
 
 def load_stats():
@@ -40,22 +44,20 @@ def save_stats(data):
 
 stats = load_stats()
 
-# ==== Reset trạng thái ====
 def reset_game_state():
-    global players, player_names, current_phrase, used_phrases, current_player_index, in_game, waiting_for_phrase, turn_timeout_task, game_start_time
-    players = []
-    player_names = {}
+    global players, player_names, current_phrase, used_phrases, current_player_index
+    global in_game, waiting_for_phrase, turn_timeout_task, game_start_time
+    players.clear()
+    player_names.clear()
+    used_phrases.clear()
     current_phrase = ""
-    used_phrases = {}
     current_player_index = 0
     in_game = False
     waiting_for_phrase = False
     game_start_time = None
     if turn_timeout_task:
         turn_timeout_task.cancel()
-        turn_timeout_task = None
 
-# ==== Kiểm tra hợp lệ ====
 def has_vietnamese_diacritics(text):
     return re.search(r"[àáảãạâầấẩẫậăằắẳẵặèéẻẽẹêềếểễệ"
                      r"ìíỉĩịòóỏõọôồốổỗộơờớởỡợ"
@@ -82,7 +84,7 @@ def get_player_name(user):
         player_names[user.id] = name
     return player_names[user.id]
 
-# ==== Các lệnh game ====
+# ==== Lệnh game ====
 
 async def start_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reset_game_state()
@@ -90,17 +92,18 @@ async def start_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     in_game = True
     game_start_time = datetime.now().strftime("%H:%M:%S")
     await update.message.reply_text(
-        "🎮 Trò chơi bắt đầu!\n👉 /join Để tham gia.\n👉 /begin Khi đủ người để bắt đầu."
+        "🎮 Trò chơi bắt đầu!\n👉 /join để tham gia.\n👉 /begin để bắt đầu khi đủ người."
     )
 
 async def join_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     if user.id not in players:
         players.append(user.id)
+        all_participants.add(user.id)
         get_player_name(user)
-        await update.message.reply_text(f"✅ {get_player_name(user)} Đã tham gia! (Tổng: {len(players)} ng)")
+        await update.message.reply_text(f"✅ {get_player_name(user)} đã tham gia! (Tổng: {len(players)} ng)")
     else:
-        await update.message.reply_text("⚠️ Bạn đã tham gia!")
+        await update.message.reply_text("⚠️ Bạn đã tham gia rồi!")
 
 async def begin_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global waiting_for_phrase, current_player_index
@@ -112,18 +115,25 @@ async def begin_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     current_player_index = 0
     user = await context.bot.get_chat(players[current_player_index])
     await update.message.reply_text(
-        f"✏️ {get_player_name(user)}, Hãy nhập cụm từ bắt đầu:\n⏰ 60 giây"
+        f"✏️ {get_player_name(user)}, hãy nhập cụm từ bắt đầu (2 từ, có dấu):\n⏰ 60 giây"
     )
     await start_turn_timer(context)
 
-# ==== Xử lý lượt chơi ====
+# ==== Luật chơi ====
 
 async def play_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global current_phrase, current_player_index, used_phrases, waiting_for_phrase
 
     user = update.effective_user
-    if not in_game or user.id not in players or user.id != players[current_player_index]:
-        return
+
+    # Nếu có game đang chơi và người nhập không đến lượt
+    if in_game:
+        if user.id not in players:
+            await update.message.reply_text("⚠️ Trò chơi đang diễn ra, bạn không được phép chơi.")
+            return
+        if user.id != players[current_player_index]:
+            await eliminate_player(update, context, "❌ Bạn nhập sai lượt!")
+            return
 
     text = update.message.text.strip().lower()
 
@@ -183,7 +193,7 @@ async def eliminate_player(update, context, reason):
     if turn_timeout_task:
         turn_timeout_task.cancel()
 
-    await update.message.reply_text(f"{name} Bị loại! {reason}")
+    await update.message.reply_text(f"❌ {name} bị loại! {reason}")
     players.remove(user.id)
 
     if len(players) == 1:
@@ -216,7 +226,7 @@ async def announce_winner(update, context):
 
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=f"🏆 {name} Chiến thắng!\n🥇 Số lần: {stats[name]}"
+        text=f"🏆 {name} chiến thắng!\n🥇 Số lần: {stats[name]}"
     )
     reset_game_state()
 
@@ -255,7 +265,7 @@ async def turn_timer(context):
     except asyncio.CancelledError:
         pass
 
-# ==== Các lệnh khác ====
+# ==== Lệnh khác ====
 
 async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not stats:
@@ -267,6 +277,28 @@ async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         msg += f"{i}. {name}: {count} lần thắng\n"
     await update.message.reply_text(msg)
 
+async def export_players_to_excel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not all_participants:
+        await update.message.reply_text("❌ Chưa có người chơi nào.")
+        return
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Nguoi choi"
+    headers = ["STT", "Tên người chơi", "Telegram ID"]
+    ws.append(headers)
+    for cell in ws[1]:
+        cell.font = Font(bold=True)
+
+    for idx, user_id in enumerate(all_participants, 1):
+        name = player_names.get(user_id, f"User {user_id}")
+        ws.append([idx, name, user_id])
+
+    file_name = "nguoi_choi.xlsx"
+    wb.save(file_name)
+    await context.bot.send_document(chat_id=update.effective_chat.id, document=open(file_name, "rb"))
+    os.remove(file_name)
+
 async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reset_game_state()
     global stats
@@ -276,50 +308,26 @@ async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "📖 HƯỚNG DẪN CHƠI NỐI CHỮ\n\n"
-        "🔹 /startgame - Bắt đầu game mới\n"
-        "🔹 /join - Tham gia game\n"
+        "📖 HƯỚNG DẪN\n\n"
+        "🔹 /startgame - Bắt đầu game\n"
+        "🔹 /join - Tham gia\n"
         "🔹 /begin - Bắt đầu chơi\n"
+        "🔹 /export - Xuất danh sách người tham gia\n"
         "🔹 /win - Xem bảng xếp hạng\n"
         "🔹 /reset - Reset game\n"
         "🔹 /help - Xem hướng dẫn\n\n"
         "📌 Luật:\n"
-        "- Mỗi cụm từ gồm 2 từ tiếng Việt\n"
-        "- Từ đầu trùng từ cuối cụm trước\n"
+        "- Cụm từ 2 từ tiếng Việt có dấu\n"
         "- Không lặp lại cụm từ\n"
         "- Không chứa từ cấm\n"
-        "- Mỗi lượt có 60 giây"
+        "- Hết 60s sẽ bị loại\n"
+        "- Sai lượt sẽ bị loại"
     )
 
-# ==== Xuất Excel ====
-
-async def export_players_to_excel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not players:
-        await update.message.reply_text("❌ Chưa có người chơi nào trong game.")
-        return
-
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = "Người chơi"
-    headers = ["STT", "Tên người chơi", "Telegram ID", "Thời gian tham gia"]
-    ws.append(headers)
-    for cell in ws[1]:
-        cell.font = Font(bold=True)
-
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    for idx, user_id in enumerate(players, 1):
-        name = player_names.get(user_id, f"User {user_id}")
-        ws.append([idx, name, user_id, now])
-
-    file_name = "nguoi_choi.xlsx"
-    wb.save(file_name)
-    await context.bot.send_document(chat_id=update.effective_chat.id, document=open(file_name, "rb"))
-    os.remove(file_name)
-
-# ==== Khởi động Bot ====
+# ==== Khởi động ====
 
 if __name__ == '__main__':
-    TOKEN = "7670306744:AAHIKDeed6h3prNCmkFhFydwrHkxJB5HM6g"  # 👉 
+    TOKEN = "7670306744:AAHIKDeed6h3prNCmkFhFydwrHkxJB5HM6g"  # 👉 Thay bằng token thật
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("startgame", start_game))
@@ -333,4 +341,3 @@ if __name__ == '__main__':
 
     print("🤖 Bot đang chạy...")
     app.run_polling()
-
