@@ -127,7 +127,7 @@ async def begin_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = players[current_player_index]
     user = await context.bot.get_chat(user_id)
     await update.message.reply_text(
-        f"✏️ {get_player_name(user)}.Hãy nhập cụm từ đầu tiên:...\u2003\n
+        f"✏️ {get_player_name(user)}.Hãy nhập cụm từ đầu tiên:...\u2003\n"
         f"⏰ Bạn có: 60 giây"
     )
     await start_turn_timer(context)
