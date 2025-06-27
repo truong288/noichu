@@ -80,14 +80,18 @@ async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("✅ Trò chơi và bảng xếp hạng đã được reset!")
 
 def is_vietnamese(text):
-    text = text.strip()
+    text = text.strip().lower()
     words = text.split()
-    if len(words) != 2:
+    if len(words) != 2:  
         return False
-    if re.search(r'[0-9]', text):
+    if any(len(word) == 1 for word in words):  # Loại từ đơn ký tự (vd: "bầu n" vì "n" dài 1 chữ)
         return False
-    vietnamese_pattern = r'^[a-zA-Zàáảãạâầấẩẫậăằắẳẵặèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ\s]+$'
-    return bool(re.match(vietnamese_pattern, text.lower()))
+    if re.search(r'\d', text): 
+        return False
+    vietnamese_pattern = r'^[a-zàáảãạâầấẩẫậăằắẳẵặèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ\s]+$'
+    if not re.match(vietnamese_pattern, text):
+        return False
+    return True
 
 def contains_banned_words(text):
     words = text.lower().split()
@@ -279,7 +283,7 @@ async def turn_timer(context):
 
 async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not stats:
-        await update.message.reply_text("📊 Chưa có ai thắng cả!")
+        await update.message.reply_text("📊 Chưa có ai thắng cả!🏁")
         return
     ranking = sorted(stats.items(), key=lambda x: x[1], reverse=True)
     message = "🏆 BẢNG XẾP HẠNG 🏆\n\n"
@@ -303,7 +307,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "- Không dùng từ không phù hợp.\n"
         "- Mỗi lượt có 60 giây để trả lời.\n"
         "- Người cuối cùng còn lại sẽ chiến thắng.!\n"
-        "👉 @xukaxuka2k1 code free,FAST AND SECURE👈"
+        "👉 @xukaxuka2k1 code free,fastandsecure👈"
     )
 
 async def export_players(update: Update, context: ContextTypes.DEFAULT_TYPE):
