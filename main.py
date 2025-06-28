@@ -154,7 +154,7 @@ async def begin_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def play_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global current_phrase, current_player_index, used_phrases, players, in_game, waiting_for_phrase, turn_timeout_task
-    if not in_game:
+    if not in_game or not waiting_for_phrase and current_phrase == "":
         return
     user = update.effective_user
     if user.id not in players or user.id != players[current_player_index]:
