@@ -29,7 +29,7 @@ STATS_FILE = "winners.json"
 EXCEL_FILE = "danh_sach.xlsx"
 
 def is_admin(user_id):
-    admin_ids = [123456789, 987654321]  
+    admin_ids = [7034158998]  
     return user_id in admin_ids
 
 def load_stats():
