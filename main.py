@@ -82,11 +82,11 @@ async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def is_vietnamese(text):
     text = text.strip().lower()
     words = text.split()
-    if len(words) != 2:
+    if len(words) != 2:  
         return False
-    if any(len(word) == 1 for word in words):
+    if any(len(word) == 1 for word in words):  # Loại từ đơn ký tự (vd: "bầu n" vì "n" dài 1 chữ)
         return False
-    if re.search(r'\d', text):
+    if re.search(r'\d', text): 
         return False
     vietnamese_pattern = r'^[a-zàáảãạâầấẩẫậăằắẳẵặèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ\s]+$'
     if not re.match(vietnamese_pattern, text):
@@ -194,7 +194,8 @@ async def process_valid_word(update, context, text, is_first_word=False):
     current_word = current_phrase.split()[-1]
     next_user = await context.bot.get_chat(players[current_player_index])
     await update.message.reply_text(
-        f"{message}🔄 Lượt tiếp theo:\n"
+        f"{message}"
+        f"🔄 Lượt tiếp theo:\n"
         f"👉 Từ cần nối: 『\u2003{current_word}\u2003』\n"
         f"👤 Người chơi: {get_player_name(next_user)}\n"
         f"⏳ Thời gian: 60 giây "
@@ -215,94 +216,125 @@ async def eliminate_player(update, context, reason):
         return
     if idx < current_player_index:
         current_player_index -= 1
+    elif idx == current_player_index and current_player_index >= len(players):
+        current_player_index = 0
     current_word = current_phrase.split()[-1]
     next_user = await context.bot.get_chat(players[current_player_index])
     await update.message.reply_text(
+        f"👥 Người chơi còn lại: {len(players)}\n"
         f"🔄 Lượt tiếp theo:\n"
         f"👉 Từ cần nối: 『\u2003{current_word}\u2003』\n"
         f"👤 Người chơi: {get_player_name(next_user)}\n"
-        f"⏳ Thời gian: 60 giây"
+        f"⏳ Thời gian: 60 giây "
     )
     await start_turn_timer(context)
 
 async def announce_winner(update, context):
-    winner = await context.bot.get_chat(players[0])
+    if not players:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="🏁 Không có người chiến thắng.")
+        reset_game_state()
+        return
+    winner_id = players[0]
+    winner = await context.bot.get_chat(winner_id)
     name = get_player_name(winner)
     stats[name] = stats.get(name, 0) + 1
     save_stats(stats)
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=f"🏆 CHIẾN THẮNG!🏆\n"
+        f"👑 {name} -\u2003 Vô địch nối chữ!\n"
+        f"📊 Số lần thắng:\u2003 {stats[name]}"
+    )
     reset_game_state()
-    await update.message.reply_text(f"🎉 {name} Đã chiến thắng!\n\n🌟 Tổng chiến thắng: {stats.get(name, 0)}")
 
 async def start_turn_timer(context):
     global turn_timeout_task
+    if turn_timeout_task:
+        turn_timeout_task.cancel()
     turn_timeout_task = asyncio.create_task(turn_timer(context))
 
 async def turn_timer(context):
     global players, current_player_index
-    await asyncio.sleep(60)
-    if len(players) <= current_player_index:
-        return
-    user_id = players[current_player_index]
-    if user_id not in players:
-        return
-    user = await context.bot.get_chat(user_id)
-    await context.bot.send_message(chat_id=context._chat_id, text=f"⏰ {get_player_name(user)} Hết giờ! Loại.")
-    players.remove(user_id)
-    if len(players) == 1:
-        await announce_winner(None, context)
-        return
-    if current_player_index >= len(players):
-        current_player_index = 0
-    current_word = current_phrase.split()[-1]
-    next_user = await context.bot.get_chat(players[current_player_index])
-    await context.bot.send_message(
-        chat_id=context._chat_id,
-        text=f"🔄 Lượt tiếp theo:\n"
-        f"👉 Từ cần nối: 『\u2003{current_word}\u2003』\n"
-        f"👤 Người chơi: {get_player_name(next_user)}\n"
-        f"⏳ Thời gian: 60 giây"
-    )
-    await start_turn_timer(context)
+    try:
+        await asyncio.sleep(60)
+        if not players or current_player_index >= len(players):
+            return
+        user_id = players[current_player_index]
+        user = await context.bot.get_chat(user_id)
+        await context.bot.send_message(chat_id=context._chat_id, text=f"⏰ {get_player_name(user)} hết giờ! Bị loại.")
+        players.remove(user_id)
+        if len(players) == 1:
+            await announce_winner(None, context)
+            return
+        if current_player_index >= len(players):
+            current_player_index = 0
+        current_word = current_phrase.split()[-1]
+        next_user = await context.bot.get_chat(players[current_player_index])
+        await context.bot.send_message(
+            chat_id=context._chat_id,
+            text=f"🔄 Lượt tiếp theo:\n"
+	            f"👉 Từ cần nối: 『\u2003{current_word}\u2003』\n"
+	            f"👤 Người chơi: {get_player_name(next_user)}\n"
+	            f"⏳ Thời gian:60 giây"
+        )
+        await start_turn_timer(context)
+    except asyncio.CancelledError:
+        pass
 
-async def add_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not context.args:
-        await update.message.reply_text("⚠️ Vui lòng thêm:...")
+async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not stats:
+        await update.message.reply_text("📊 Chưa có ai thắng cả!🏁")
         return
-    new_word = context.args[0].strip().lower()
-    if new_word in BANNED_WORDS:
-        await update.message.reply_text(f"⚠️ Từ '{new_word}' Đã tồn tại.")
-    else:
-        BANNED_WORDS.add(new_word)
-        await update.message.reply_text(f"✅ Đã thêm từ '{new_word}' Thên thành công.")
+    ranking = sorted(stats.items(), key=lambda x: x[1], reverse=True)
+    message = "🏆 BẢNG XẾP HẠNG 🏆\n\n"
+    for i, (name, wins) in enumerate(ranking[:10], 1):
+        message += f"{i}. {name}: {wins} Lần thắng\n"
+    await update.message.reply_text(message)
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "📖 HƯỚNG DẪN TRÒ CHƠI NỐI CHỮ\n\n"
+        "🔹 /startgame - Bắt đầu trò chơi mới.\n"
+        "🔹 /join - Tham gia trò chơi.\n"
+        "🔹 /begin - Bắt đầu khi đủ người.\n"
+        "🔹 /win - Xem bảng xếp hạng.\n"
+        "🔹 /reset - Làm mới lại toàn bộ.\n"
+        "🔹 /help - Xem hướng dẫn.\n\n"
+        "📌 LUẬT CHƠI:\n"
+        "- Mỗi cụm từ gồm 2 từ.\n"
+        "- Nối từ cuối của cụm trước đó.\n"
+        "- Không lặp lại cụm từ đã dùng.\n"
+        "- Không dùng từ không phù hợp.\n"
+        "- Mỗi lượt có 60 giây để trả lời.\n"
+        "- Người cuối cùng còn lại sẽ chiến thắng.!\n"
+        "👉 @xukaxuka2k1 code free,fastandsecure👈"
+    )
 
 async def export_players(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if len(players) == 0:
-        await update.message.reply_text("⚠️ Không có người chơi nào.")
+    if not os.path.exists(EXCEL_FILE):
+        await update.message.reply_text("❌ Chưa có dữ liệu người chơi.")
         return
-    player_list = "\n".join([f"{get_player_name(await context.bot.get_chat(player))} (@{get_player_username(await context.bot.get_chat(player))})" for player in players])
-    await update.message.reply_text(f"📋 Danh sách người chơi:\n{player_list}")
+    with open(EXCEL_FILE, "rb") as f:
+        await update.message.reply_document(document=f, filename=EXCEL_FILE)
 
 async def clear_excel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if os.path.exists(EXCEL_FILE):
         os.remove(EXCEL_FILE)
-        await update.message.reply_text("✅ Tệp Excel đã được xóa.")
+        await update.message.reply_text("🧹 File Excel đã được xoá.")
     else:
-        await update.message.reply_text("⚠️ Không tìm thấy tệp Excel.")
+        await update.message.reply_text("⚠️ Không tìm thấy file Excel để xoá.")
 
-def main():
-    application = ApplicationBuilder().token("7670306744:AAHIKDeed6h3prNCmkFhFydwrHkxJB5HM6g").build()
-
-    application.add_handler(CommandHandler("start", start_game))
-    application.add_handler(CommandHandler("join", join_game))
-    application.add_handler(CommandHandler("begin", begin_game))
-    application.add_handler(CommandHandler("reset", reset))
-    application.add_handler(CommandHandler("fast", export_players))
-    application.add_handler(CommandHandler("secure", clear_excel))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, play_word))
-    application.add_handler(CommandHandler("add_word", add_word))
-
-    application.run_polling()
-
-if __name__ == "__main__":
-    main()
-
+if __name__ == '__main__':
+    TOKEN = "7670306744:AAHIKDeed6h3prNCmkFhFydwrHkxJB5HM6g"
+    app = ApplicationBuilder().token(TOKEN).build()
+    app.add_handler(CommandHandler("startgame", start_game))
+    app.add_handler(CommandHandler("join", join_game))
+    app.add_handler(CommandHandler("begin", begin_game))
+    app.add_handler(CommandHandler("win", show_stats))
+    app.add_handler(CommandHandler("reset", reset))
+    app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(CommandHandler("fast", export_players))
+    app.add_handler(CommandHandler("secure", clear_excel))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, play_word))
+    print("Bot đang chạy...")
+    app.run_polling()
