@@ -471,8 +471,8 @@ async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def main():
-    app = ApplicationBuilder().token(
-        "7670306744:AAHIKDeed6h3prNCmkFhFydwrHkxJB5HM6g").build()
+    TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+    app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
 
     app.add_handler(CommandHandler("startgame", start_game))
     app.add_handler(CommandHandler("join", join_game))
