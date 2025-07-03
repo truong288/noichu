@@ -78,7 +78,7 @@ def save_player_to_excel(user_id, name, username, join_time):
 
 
 def reset_game_state():
-    global players, player_names, player_usernames, player_join_times, current_phrase, used_phrases, current_player_index, in_game, waiting_for_phrase, turn_timeout_task, game_start_time, chat_id
+    global players, player_names, player_usernames, player_join_times, current_phrase, used_phrases, current_player_index, in_game, waiting_for_phrase, turn_timeout_task, game_start_time, chat_id, game_ended
     players = []
     player_names = {}
     player_usernames = {}
@@ -90,9 +90,11 @@ def reset_game_state():
     waiting_for_phrase = False
     game_start_time = None
     chat_id = None
+    game_ended = False  # Đặt lại trạng thái trò chơi đã kết thúc
     if turn_timeout_task:
         turn_timeout_task.cancel()
         turn_timeout_task = None
+
 
 async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reset_game_state()
@@ -141,14 +143,15 @@ def get_player_username(user):
 
 
 async def start_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global in_game, game_start_time, chat_id
-    if in_game:
-        await update.message.reply_text("⚠️ Trò chơi đang diễn ra! Bạn ấn /luuy để hiểu thêm nhé!.")
+    global in_game, game_ended, game_start_time, chat_id
+    if in_game and not game_ended:
+        await update.message.reply_text("⚠️ Trò chơi đang diễn ra! Bạn ấn vào /luuy để hiểu hơn.")
         return
     reset_game_state()
     in_game = True
+    game_ended = False  # Đảm bảo rằng trò chơi được thiết lập lại khi bắt đầu mới
     game_start_time = datetime.now().strftime("%H:%M")
-    chat_id = update.effective_chat.id  # Lưu chat_id để dùng trong timer
+    chat_id = update.effective_chat.id
     await update.message.reply_text("🎮 Trò chơi bắt đầu!\n"
                                     "👉 Gõ \u2003/join \u2003để tham gia\n"
                                     "👉 Gõ \u2003/begin \u2003khi đủ người, để bắt đầu ")
@@ -271,7 +274,7 @@ async def eliminate_player(update, context, reason):
     await start_turn_timer(context)
 
 async def announce_winner(update, context):
-    global stats, players, in_game
+    global stats, players, in_game, game_ended
     if not players:
         if update:
             await context.bot.send_message(
@@ -287,8 +290,8 @@ async def announce_winner(update, context):
     cid = update.effective_chat.id if update else chat_id
     await context.bot.send_message(chat_id=cid,
                                    text=f"🏆 CHIẾN THẮNG!🏆\n"
-                                   f"👑 {name} -\u2003 Vô địch nối chữ!\n"
-                                   f"📊 Số lần thắng:\u2003 {stats[name]}")
+                                        f"👑 {name} -\u2003 Vô địch nối chữ!\n"
+                                        f"📊 Số lần thắng:\u2003 {stats[name]}")
     try:
         await context.bot.send_sticker(
             chat_id=cid,
@@ -297,6 +300,8 @@ async def announce_winner(update, context):
     except Exception as e:
         print(f"Lỗi gửi sticker thắng: {e}")
     reset_game_state()
+    game_ended = True  # Đánh dấu trò chơi kết thúc
+
 
 
 async def start_turn_timer(context):
