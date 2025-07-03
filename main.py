@@ -78,7 +78,7 @@ def save_player_to_excel(user_id, name, username, join_time):
 
 
 def reset_game_state():
-    global players, player_names, player_usernames, player_join_times, current_phrase, used_phrases, current_player_index, in_game, waiting_for_phrase, turn_timeout_task, game_start_time, chat_id, game_ended
+    global players, player_names, player_usernames, player_join_times, current_phrase, used_phrases, current_player_index, in_game, waiting_for_phrase, turn_timeout_task, game_start_time, chat_id
     players = []
     player_names = {}
     player_usernames = {}
@@ -86,11 +86,10 @@ def reset_game_state():
     current_phrase = ""
     used_phrases = {}
     current_player_index = 0
-    in_game = False  # Reset trạng thái trò chơi
+    in_game = False
     waiting_for_phrase = False
     game_start_time = None
     chat_id = None
-    game_ended = False  # Đặt lại trạng thái trò chơi đã kết thúc
     if turn_timeout_task:
         turn_timeout_task.cancel()
         turn_timeout_task = None
@@ -142,29 +141,28 @@ def get_player_username(user):
     return "(chưa có username)"
 
 
-game_started = False
-
 async def start_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global in_game, game_ended, game_start_time, chat_id, game_started
-    
-    if in_game and game_started: 
+    global in_game, game_start_time, chat_id
+    if in_game:
         await update.message.reply_text(
-            "⚠️ Trò chơi đang diễn ra! Bạn ấn /luuy để hiểu thêm nhé!"
+            "⚠️ Trò chơi đang diễn ra, chưa kết thúc. Hãy ấn /luuy để hiểu thêm nhé!."
         )
         return
 
-    reset_game_state()
-    in_game = True
-    game_ended = False  # Đảm bảo rằng trò chơi được thiết lập lại khi bắt đầu mới
-    game_started = False  # Ban đầu, chưa bắt đầu trò chơi
-    game_start_time = datetime.now().strftime("%H:%M")
-    chat_id = update.effective_chat.id
+    # Nếu chưa có ai chơi và chưa bắt đầu trò chơi, bắt đầu trò chơi mới
+    reset_game_state()  # Đặt lại tất cả trạng thái trò chơi
+    in_game = True  # Đặt trạng thái trò chơi là đang diễn ra
+    game_start_time = datetime.now().strftime("%H:%M") 
+    chat_id = update.effective_chat.id  # Lưu chat_id để sử dụng trong các thông báo
 
+    # Thông báo trò chơi bắt đầu
     await update.message.reply_text(
         "🎮 Trò chơi bắt đầu!\n"
         "👉 Gõ /join để tham gia\n"
-        "👉 Gõ /begin khi đủ người, để bắt đầu"
+        "👉 Gõ /begin khi đủ người, để bắt đầu "
     )
+
+
 
 async def join_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global players
@@ -283,8 +281,9 @@ async def eliminate_player(update, context, reason):
         f"⏳ Thời gian: 60 giây ")
     await start_turn_timer(context)
 
+
 async def announce_winner(update, context):
-    global stats, players, in_game, game_ended
+    global stats, players
     if not players:
         if update:
             await context.bot.send_message(
@@ -300,18 +299,17 @@ async def announce_winner(update, context):
     cid = update.effective_chat.id if update else chat_id
     await context.bot.send_message(chat_id=cid,
                                    text=f"🏆 CHIẾN THẮNG!🏆\n"
-                                        f"👑 {name} -\u2003 Vô địch nối chữ!\n"
-                                        f"📊 Số lần thắng:\u2003 {stats[name]}")
+                                   f"👑 {name} -\u2003 Vô địch nối chữ!\n"
+                                   f"📊 Số lần thắng:\u2003 {stats[name]}")
     try:
         await context.bot.send_sticker(
             chat_id=cid,
-            sticker="CAACAgUAAxkBAAIBhWY9Bz7A0vjK0-BzFLEIF3qv7fBvAAK7AQACVp29V_R3rfJPL2MlNAQ"
+            sticker=
+            "CAACAgUAAxkBAAIBhWY9Bz7A0vjK0-BzFLEIF3qv7fBvAAK7AQACVp29V_R3rfJPL2MlNAQ"
         )
     except Exception as e:
         print(f"Lỗi gửi sticker thắng: {e}")
     reset_game_state()
-    game_ended = True  # Đánh dấu trò chơi kết thúc
-
 
 
 async def start_turn_timer(context):
@@ -478,9 +476,6 @@ async def admin_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Gửi tin nhắn chứa các lệnh quản trị viên
     await update.message.reply_text(admin_commands, parse_mode="Markdown")
 
-async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "❓ Lệnh không hợp lệ. Gõ /help để xem lệnh.")
 async def luu_y(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Nội dung lưu ý
     note = (
@@ -493,6 +488,10 @@ async def luu_y(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🔹 **Thì mới [startgame] để tiếp tục chơi nhé!**"
     )
     await update.message.reply_text(note)
+
+async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "❓ Lệnh không hợp lệ. Gõ /help để xem lệnh.")
 
 
 def main():
