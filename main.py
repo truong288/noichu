@@ -158,8 +158,8 @@ async def start_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Thông báo trò chơi bắt đầu
     await update.message.reply_text(
         "🎮 Trò chơi bắt đầu!\n"
-        "👉 Gõ /join để tham gia\n"
-        "👉 Gõ /begin khi đủ người, để bắt đầu "
+        "👉 Gõ \u2003/join \u2003 Để tham gia.\n"
+        "👉 Gõ \u2003/begin \u2003 Khi đủ người, để bắt đầu. "
     )
 
 
