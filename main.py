@@ -142,19 +142,29 @@ def get_player_username(user):
     return "(chưa có username)"
 
 
+game_started = False
+
 async def start_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global in_game, game_ended, game_start_time, chat_id
-    if in_game and not game_ended:
-        await update.message.reply_text("⚠️ Trò chơi đang diễn ra! Bạn ấn vào /luuy để hiểu hơn.")
+    global in_game, game_ended, game_start_time, chat_id, game_started
+    
+    if in_game and game_started: 
+        await update.message.reply_text(
+            "⚠️ Trò chơi đang diễn ra! Bạn ấn /luuy để hiểu thêm nhé!"
+        )
         return
+
     reset_game_state()
     in_game = True
     game_ended = False  # Đảm bảo rằng trò chơi được thiết lập lại khi bắt đầu mới
+    game_started = False  # Ban đầu, chưa bắt đầu trò chơi
     game_start_time = datetime.now().strftime("%H:%M")
     chat_id = update.effective_chat.id
-    await update.message.reply_text("🎮 Trò chơi bắt đầu!\n"
-                                    "👉 Gõ \u2003/join \u2003để tham gia\n"
-                                    "👉 Gõ \u2003/begin \u2003khi đủ người, để bắt đầu ")
+
+    await update.message.reply_text(
+        "🎮 Trò chơi bắt đầu!\n"
+        "👉 Gõ /join để tham gia\n"
+        "👉 Gõ /begin khi đủ người, để bắt đầu"
+    )
 
 async def join_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global players
