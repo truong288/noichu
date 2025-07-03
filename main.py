@@ -86,14 +86,13 @@ def reset_game_state():
     current_phrase = ""
     used_phrases = {}
     current_player_index = 0
-    in_game = False
+    in_game = False  # Reset trạng thái trò chơi
     waiting_for_phrase = False
     game_start_time = None
     chat_id = None
     if turn_timeout_task:
         turn_timeout_task.cancel()
         turn_timeout_task = None
-
 
 async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reset_game_state()
@@ -142,15 +141,17 @@ def get_player_username(user):
 
 
 async def start_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    reset_game_state()
     global in_game, game_start_time, chat_id
+    if in_game:
+        await update.message.reply_text("⚠️ Trò chơi đang diễn ra! Bạn phải đợi đến khi trò chơi kết thúc.")
+        return
+    reset_game_state()
     in_game = True
     game_start_time = datetime.now().strftime("%H:%M")
     chat_id = update.effective_chat.id  # Lưu chat_id để dùng trong timer
     await update.message.reply_text("🎮 Trò chơi bắt đầu!\n"
-                                    "👉 Gõ /join để tham gia\n"
-                                    "👉 Gõ /begin khi đủ người, để bắt đầu ")
-
+                                    "👉 Gõ \u2003/join \u2003để tham gia\n"
+                                    "👉 Gõ \u2003/begin \u2003khi đủ người, để bắt đầu ")
 
 async def join_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global players
@@ -269,9 +270,8 @@ async def eliminate_player(update, context, reason):
         f"⏳ Thời gian: 60 giây ")
     await start_turn_timer(context)
 
-
 async def announce_winner(update, context):
-    global stats, players
+    global stats, players, in_game
     if not players:
         if update:
             await context.bot.send_message(
@@ -292,8 +292,7 @@ async def announce_winner(update, context):
     try:
         await context.bot.send_sticker(
             chat_id=cid,
-            sticker=
-            "CAACAgUAAxkBAAIBhWY9Bz7A0vjK0-BzFLEIF3qv7fBvAAK7AQACVp29V_R3rfJPL2MlNAQ"
+            sticker="CAACAgUAAxkBAAIBhWY9Bz7A0vjK0-BzFLEIF3qv7fBvAAK7AQACVp29V_R3rfJPL2MlNAQ"
         )
     except Exception as e:
         print(f"Lỗi gửi sticker thắng: {e}")
