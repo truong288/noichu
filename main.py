@@ -143,7 +143,7 @@ def get_player_username(user):
 async def start_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global in_game, game_start_time, chat_id
     if in_game:
-        await update.message.reply_text("⚠️ Trò chơi đang diễn ra! Bạn phải đợi đến khi trò chơi kết thúc.")
+        await update.message.reply_text("⚠️ Trò chơi đang diễn ra! Bạn ấn /luuy để hiểu thêm nhé!.")
         return
     reset_game_state()
     in_game = True
@@ -463,10 +463,21 @@ async def admin_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Gửi tin nhắn chứa các lệnh quản trị viên
     await update.message.reply_text(admin_commands, parse_mode="Markdown")
 
-
 async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "❓ Lệnh không hợp lệ. Gõ /help để xem lệnh.")
+async def luu_y(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Nội dung lưu ý
+    note = (
+        "⚠️ **Lưu ý** ⚠️\n\n"
+        "🔹 **Bot không hoạt động cùng lúc ở nhiều nhóm**.\n"
+        "🔹 **Bot chỉ hoạt động trong nhóm nào ấn [begin] trước**.\n"
+        "🔹 **Vì vậy, nếu trò chơi đang diễn ra trong nhóm này**.\n"
+        "🔹 **Nhóm khác sẽ không thể bắt đầu trò chơi**.\n"
+        "🔹 **Cho đến khi trò chơi kết thúc ở nhóm trước**.\n"
+        "🔹 **Thì mới [startgame] để tiếp tục chơi nhé!**"
+    )
+    await update.message.reply_text(note)
 
 
 def main():
@@ -486,6 +497,7 @@ def main():
     app.add_handler(CommandHandler("kick", kick_user))
     app.add_handler(CommandHandler("list", list_players))
     app.add_handler(CommandHandler("admin", admin_command))
+    app.add_handler(CommandHandler("luuy", luu_y))
     app.add_handler(
         MessageHandler(filters.TEXT & (~filters.COMMAND), play_word))
     app.add_handler(MessageHandler(filters.COMMAND, unknown))
