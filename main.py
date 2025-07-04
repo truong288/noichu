@@ -142,27 +142,23 @@ def get_player_username(user):
 
 
 async def start_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global in_game, game_start_time, chat_id
-    if in_game:
+    global in_game, waiting_for_phrase, game_start_time, chat_id
+
+    # Nếu trò chơi đang diễn ra hoặc đang chờ người chơi nhập cụm đầu
+    if in_game or waiting_for_phrase:
         await update.message.reply_text(
-            "⚠️ Trò chơi đang diễn ra, chưa kết thúc. Hãy ấn /luuy để hiểu thêm nhé!."
-        )
+            "⚠️ Trò chơi đang diễn ra, chưa kết thúc. Hãy ấn /luuy để hiểu thêm nhé!")
         return
 
-    # Nếu chưa có ai chơi và chưa bắt đầu trò chơi, bắt đầu trò chơi mới
-    reset_game_state()  # Đặt lại tất cả trạng thái trò chơi
-    in_game = True  # Đặt trạng thái trò chơi là đang diễn ra
+    reset_game_state()  # Đặt lại toàn bộ trạng thái trò chơi
     game_start_time = datetime.now().strftime("%H:%M") 
-    chat_id = update.effective_chat.id  # Lưu chat_id để sử dụng trong các thông báo
+    chat_id = update.effective_chat.id
 
-    # Thông báo trò chơi bắt đầu
     await update.message.reply_text(
         "🎮 Trò chơi bắt đầu!\n"
-        "👉 Gõ \u2003/join \u2003 Để tham gia.\n"
-        "👉 Gõ \u2003/begin \u2003 Khi đủ người, để bắt đầu. "
+        "👉 Gõ \u2003/join \u2003 để tham gia.\n"
+        "👉 Gõ \u2003/begin \u2003 khi đủ người, để bắt đầu."
     )
-
-
 
 async def join_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global players
@@ -184,19 +180,29 @@ async def join_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def begin_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global waiting_for_phrase, current_player_index
+    global waiting_for_phrase, current_player_index, in_game
+
+    # Nếu đã bắt đầu rồi thì không được ấn thêm
+    if in_game or waiting_for_phrase:
+        await update.message.reply_text("⚠️ Trò chơi đã bắt đầu.")
+        return
+
     if len(players) < 2:
         await update.message.reply_text(
             "❗ Cần ít nhất 2 người chơi để bắt đầu!")
         return
+
+    in_game = True
     waiting_for_phrase = True
     current_player_index = 0
     user_id = players[current_player_index]
     user = await context.bot.get_chat(user_id)
+
     await update.message.reply_text(
         f"✏️ {get_player_name(user)}, Hãy nhập cụm từ đầu tiên:...\u2003\n"
-        f"⏰ Bạn có: 60 giây")
+        f"⏰ Bạn có 60 giây.")
     await start_turn_timer(context)
+
 
 
 async def play_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
