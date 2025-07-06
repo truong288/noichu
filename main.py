@@ -1,4 +1,4 @@
-from telegram import Update
+from telegram import Update  #ok
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 import asyncio
 import re
@@ -583,7 +583,7 @@ async def admin_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                       "🔹 /ban @username - Cấm .\n"
                       "🔹 /kick @username - Kích.\n"
                       "🔹 /addword <từ> - Thêm từ:...\n"
-                      "🔹 /reset - Làm mới lại toàn bộ.\n
+                      "🔹 /reset - Làm mới lại toàn bộ.\n"
 
     await update.message.reply_text(admin_commands, parse_mode="Markdown")
 
