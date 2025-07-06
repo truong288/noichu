@@ -6,7 +6,9 @@ import json
 import os
 from datetime import datetime
 import openpyxl
+from stay_alive import keep_alive
 
+keep_alive()
 
 players = {}
 player_names = {}
