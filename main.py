@@ -24,10 +24,24 @@ game_start_time = {}
 chat_id = {}
 BANNED_USERS = {}
 
+
 GLOBAL_BANNED_WORDS = {
     "đần", "bần", "ngu", "ngốc", "bò", "dốt", "nát", "chó", "địt", "mẹ", "mày",
     "chi", "mô", "răng", "rứa", "má", "lồn", "lòn", "cứt"
 }
+BANNED_WORDS_FILE = "banned_words.txt"
+
+def load_banned_words():
+    if os.path.exists(BANNED_WORDS_FILE):
+        with open(BANNED_WORDS_FILE, "r", encoding="utf-8") as f:
+            return set(line.strip().lower() for line in f.readlines())
+    return set()
+
+def save_banned_words():
+    with open(BANNED_WORDS_FILE, "w", encoding="utf-8") as f:
+        f.write("\n".join(sorted(GLOBAL_BANNED_WORDS)))
+
+GLOBAL_BANNED_WORDS.update(load_banned_words())
 
 STATS_FILE = "winners.json"
 EXCEL_FILE = "danh_sach.xlsx"
@@ -500,20 +514,22 @@ async def add_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
 
     if not is_admin(user.id):
-        await update.message.reply_text("⚠️ Chưa cấp quyền.")
+        await update.message.reply_text("⚠️ Chưa thêm quyền.")
         return
 
     if not context.args:
-        await update.message.reply_text("⚠️ Vui lòng nhập từ.")
+        await update.message.reply_text("⚠️ Vui lòng nhập từ để thêm.")
         return
 
     new_word = context.args[0].strip().lower()
 
     if new_word in GLOBAL_BANNED_WORDS:
         await update.message.reply_text("⚠️ Từ này đã tồn tại.")
-    else:
-        GLOBAL_BANNED_WORDS.add(new_word)
-        await update.message.reply_text(f"✅ Đã thêm: '{new_word}' thành công.")
+        return
+
+    GLOBAL_BANNED_WORDS.add(new_word)
+    save_banned_words()
+    await update.message.reply_text(f"✅ Đã thêm từ cấm: '{new_word}' thành công.")
 
 
 async def ban_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
