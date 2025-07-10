@@ -1,4 +1,4 @@
-from telegram import Update  #ok
+from telegram import Update  #ok chạy đa nhóm có gắn link CARO
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 import asyncio
 import re
@@ -622,8 +622,10 @@ async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
 
     await update.message.reply_text(
-        "❓ Lệnh không hợp lệ. Gõ /help để xem lệnh.")
-
+        "❓ Lệnh không hợp lệ. Gõ /help để xem lệnh.\n\n"
+        "🎮 game Caro:\u2003\u2003@Game_carobot\n"
+        "🎮 Nối chữ:\u2003\u2003\u2003@noi_chu_bot"
+    )
 
 def main():
     TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
