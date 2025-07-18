@@ -121,12 +121,32 @@ def reset_game_state(chat_id):
 
 
 async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    reset_game_state(update.effective_chat.id)
-    global stats
-    stats = {}
-    save_stats(stats)
-    await update.message.reply_text(
-        "✅ Trò chơi và bảng xếp hạng đã được reset!")
+    chat_id = update.effective_chat.id
+    user = update.effective_user
+
+    # Nếu là ADMIN → Reset toàn bộ
+    if is_admin(user.id):
+        global stats
+        stats = {}  # Xóa toàn bộ stats
+        save_stats(stats)
+        
+        # Reset trạng thái tất cả nhóm
+        for group_id in list(players.keys()):
+            reset_game_state(group_id)
+        
+        await update.message.reply_text("♻️ **ADMIN đã reset TOÀN BỘ!**")
+    
+    # Nếu không phải admin → Chỉ reset nhóm hiện tại
+    else:
+        reset_game_state(chat_id)
+        
+        # Chỉ reset stats của nhóm hiện tại
+        str_chat_id = str(chat_id)
+        if str_chat_id in stats:
+            stats[str_chat_id] = {}
+            save_stats(stats)
+        
+        await update.message.reply_text("✅ Trò chơi và bảng xếp hạng đã được reset **!")
 
 
 def is_vietnamese(text):
@@ -441,10 +461,10 @@ async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if is_admin(user_id):
         if not stats:
             await update.message.reply_text(
-                "📊 Chưa có ai thắng cả trên toàn All.")
+                "📊 All chưa có ai thắng.")
             return
 
-        message = "🏆 BẢNG XẾP HẠNG TOÀN BỘ 🏆\n\n"
+        message = "🏆 BẢNG XẾP HẠNG All 🏆\n\n"
         for group_id, group_stats in stats.items():
             message += f"📍 Nhóm {group_id}:\n"
             ranking = sorted(group_stats.items(),
