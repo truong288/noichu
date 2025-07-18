@@ -124,14 +124,18 @@ async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     user = update.effective_user
 
-    # Nếu là ADMIN → Xóa TOÀN BỘ stats
-    if is_admin(user.id):
+    # Nếu là ADMIN → Xóa TOÀN BỘ 
+        if is_admin(user.id):
         global stats
         stats = {}  # Xóa sạch toàn bộ thống kê
         save_stats(stats)
-        await update.message.reply_text("♻️ **ADMIN đã reset TOÀN BỘ!**")
+        await update.message.reply_text("♻️**ADMIN đã reset TOÀN BỘ!**")
 
+    # Nếu là người thường → Xóa stats VÀ trạng thái game CỦA NHÓM HIỆN TẠI
     else:
+        # Lưu lại thống kê cũ của nhóm này trước khi xóa
+        old_stats = stats.get(str(chat_id), {}).copy()
+        
         # Reset trạng thái game nhóm hiện tại
         reset_game_state(chat_id)
         
@@ -141,7 +145,12 @@ async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
             del stats[str_chat_id]
             save_stats(stats)
         
-        await update.message.reply_text("✅ Trò chơi và bảng xếp hạng đã được reset **!")
+        # Khôi phục lại thống kê cũ (chỉ để admin xem)
+        stats["_hidden_" + str_chat_id] = old_stats
+        save_stats(stats)
+        
+        await update.message.reply_text("✅ Trò chơi và bảng xếp hạng đã  reset **")
+
 
 
 
@@ -453,18 +462,31 @@ async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     chat_id = str(update.effective_chat.id)
 
-    # Nếu là ADMIN: hiển thị toàn bộ stats (nếu có)
+    # Nếu là ADMIN: hiển thị toàn bộ stats (bao gồm cả nhóm đã reset)
     if is_admin(user_id):
-        if not stats:
-            await update.message.reply_text("📊 All chưa có ai thắng")
+        combined_stats = {}
+        
+        # Lấy stats hiện tại
+        for group_id, group_stats in stats.items():
+            if not group_id.startswith("_"):  # Bỏ qua các stats ẩn
+                combined_stats[group_id] = group_stats
+        
+        # Lấy stats từ các nhóm đã reset
+        for group_id, group_stats in stats.items():
+            if group_id.startswith("_hidden_"):
+                real_group_id = group_id[8:]  # Bỏ phần "_hidden_"
+                combined_stats[real_group_id] = group_stats
+
+        if not combined_stats:
+            await update.message.reply_text("📊 All chưa có ai thắng!")
             return
 
         message = "🏆 BẢNG XẾP HẠNG All 🏆\n\n"
-        for group_id, group_stats in stats.items():
+        for group_id, group_stats in combined_stats.items():
             message += f"📍 Nhóm {group_id}:\n"
             ranking = sorted(group_stats.items(), key=lambda x: x[1], reverse=True)
             for i, (name, wins) in enumerate(ranking[:10], 1):
-                message += f"  {i}. {name}: {wins} Lần\n"
+                message += f"  {i}. {name}: {wins} lần thắng\n"
             message += "\n"
         await update.message.reply_text(message)
     
@@ -477,8 +499,9 @@ async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ranking = sorted(stats[chat_id].items(), key=lambda x: x[1], reverse=True)
         message = "🏆 BẢNG XẾP HẠNG NHÓM 🏆\n\n"
         for i, (name, wins) in enumerate(ranking[:10], 1):
-            message += f"{i}. {name}: {wins} Lần thắng\n"
+            message += f"{i}. {name}: {wins} lần thắng\n"
         await update.message.reply_text(message)
+
 
 
 
