@@ -1102,7 +1102,6 @@ chùi
 chùm
 chùn
 chùng
-chú
 chúa
 chúc
 chúi
@@ -1363,7 +1362,6 @@ chớn
 chớp
 chớt
 chờ
-chời
 chờm
 chờn
 chở
@@ -1395,7 +1393,6 @@ chủi
 chủm
 chủn
 chủng
-chứ
 chứa
 chức
 chứi
