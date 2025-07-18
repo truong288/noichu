@@ -124,29 +124,25 @@ async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     user = update.effective_user
 
-    # Nếu là ADMIN → Reset toàn bộ
+    # Nếu là ADMIN → Xóa TOÀN BỘ stats
     if is_admin(user.id):
         global stats
-        stats = {}  # Xóa toàn bộ stats
+        stats = {}  # Xóa sạch toàn bộ thống kê
         save_stats(stats)
-        
-        # Reset trạng thái tất cả nhóm
-        for group_id in list(players.keys()):
-            reset_game_state(group_id)
-        
         await update.message.reply_text("♻️ **ADMIN đã reset TOÀN BỘ!**")
-    
-    # Nếu không phải admin → Chỉ reset nhóm hiện tại
+
     else:
+        # Reset trạng thái game nhóm hiện tại
         reset_game_state(chat_id)
         
-        # Chỉ reset stats của nhóm hiện tại
+        # Xóa stats nhóm hiện tại
         str_chat_id = str(chat_id)
         if str_chat_id in stats:
-            stats[str_chat_id] = {}
+            del stats[str_chat_id]
             save_stats(stats)
         
         await update.message.reply_text("✅ Trò chơi và bảng xếp hạng đã được reset **!")
+
 
 
 def is_vietnamese(text):
@@ -453,39 +449,37 @@ async def turn_timer(context, chat_id):
     except asyncio.CancelledError:
         pass
 
-
 async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     chat_id = str(update.effective_chat.id)
 
+    # Nếu là ADMIN: hiển thị toàn bộ stats (nếu có)
     if is_admin(user_id):
         if not stats:
-            await update.message.reply_text(
-                "📊 All chưa có ai thắng.")
+            await update.message.reply_text("📊 All chưa có ai thắng")
             return
 
         message = "🏆 BẢNG XẾP HẠNG All 🏆\n\n"
         for group_id, group_stats in stats.items():
             message += f"📍 Nhóm {group_id}:\n"
-            ranking = sorted(group_stats.items(),
-                             key=lambda x: x[1],
-                             reverse=True)
+            ranking = sorted(group_stats.items(), key=lambda x: x[1], reverse=True)
             for i, (name, wins) in enumerate(ranking[:10], 1):
                 message += f"  {i}. {name}: {wins} Lần\n"
             message += "\n"
         await update.message.reply_text(message)
-        return
+    
+    # Nếu là người thường: chỉ hiển thị stats nhóm hiện tại (nếu có)
+    else:
+        if chat_id not in stats or not stats[chat_id]:
+            await update.message.reply_text("📊 Nhóm này chưa có ai thắng!")
+            return
 
-    if chat_id not in stats or not stats[chat_id]:
-        await update.message.reply_text("📊 Chưa có ai giành chiến thắng.")
-        return
+        ranking = sorted(stats[chat_id].items(), key=lambda x: x[1], reverse=True)
+        message = "🏆 BẢNG XẾP HẠNG NHÓM 🏆\n\n"
+        for i, (name, wins) in enumerate(ranking[:10], 1):
+            message += f"{i}. {name}: {wins} Lần thắng\n"
+        await update.message.reply_text(message)
 
-    ranking = sorted(stats[chat_id].items(), key=lambda x: x[1], reverse=True)
-    message = "🏆 BẢNG XẾP HẠNG NHÓM 🏆\n\n"
-    for i, (name, wins) in enumerate(ranking[:10], 1):
-        message += f"{i}. {name}: {wins} Lần thắng\n"
-
-    await update.message.reply_text(message)
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
