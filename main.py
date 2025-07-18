@@ -125,7 +125,7 @@ async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
 
     # Nếu là ADMIN → Xóa TOÀN BỘ 
-        if is_admin(user.id):
+    if is_admin(user.id):
         global stats
         stats = {}  # Xóa sạch toàn bộ thống kê
         save_stats(stats)
@@ -150,9 +150,6 @@ async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
         save_stats(stats)
         
         await update.message.reply_text("✅ Trò chơi và bảng xếp hạng đã  reset **")
-
-
-
 
 def is_vietnamese(text):
     text = text.strip().lower()
