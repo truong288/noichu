@@ -1,4 +1,5 @@
 from telegram import Update  #ok chạy đa nhóm có gắn link CARO
+from telegram.ext import ContextTypes
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 import asyncio
 import re
@@ -58,9 +59,23 @@ def load_tu_don():
 TU_DON_LIST = load_tu_don()
 
 
+ADMINS_FILE = "admins.json"
+
+def load_admins():
+    if os.path.exists(ADMINS_FILE):
+        with open(ADMINS_FILE, "r") as f:
+            return set(json.load(f))
+    return set()
+
+def save_admins(admin_ids):
+    with open(ADMINS_FILE, "w") as f:
+        json.dump(list(admin_ids), f)
+
+ADMIN_IDS = load_admins()
+
 def is_admin(user_id):
-    admin_ids = [5429428390, 5930936939, 7034158998]
-    return user_id in admin_ids
+    return user_id in ADMIN_IDS
+
 
 
 def load_stats():
@@ -635,10 +650,62 @@ async def admin_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                       "🔹 /ban @username - Cấm .\n"
                       "🔹 /kick @username - Kích.\n"
                       "🔹 /addword <từ> - Thêm từ:...\n"
-                      "🔹 /reset - Làm mới lại toàn bộ." )
+                      "🔹 /reset - Làm mới lại toàn bộ.\n" 
+					  "🔹 /getid - @username Để lấy ID.\n"
+					  "🔹 /addadmin - ID Làm admin.\n"
+					  "🔹 /removeadmin - ID Xoá admin.")
 
     await update.message.reply_text(admin_commands, parse_mode="Markdown")
 
+async def get_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not context.args:
+        await update.message.reply_text("❗ Cú pháp: /getid @username")
+        return
+
+    username = context.args[0].lstrip('@')
+    chat = update.effective_chat
+
+    members = player_usernames.get(chat.id, {})
+    for uid, uname in members.items():
+        if uname.lower() == username.lower():
+            await update.message.reply_text(f"🆔 ID của @{username} là: `{uid}`", parse_mode="Markdown")
+            return
+
+    await update.message.reply_text("❌ Không tìm thấy username.")
+
+async def add_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id):
+        return await update.message.reply_text("❌ Bạn không có quyền.")
+
+    if not context.args:
+        return await update.message.reply_text("❗ Cú pháp: /addadmin <user_id>")
+
+    try:
+        new_id = int(context.args[0])
+        ADMIN_IDS.add(new_id)
+        save_admins(ADMIN_IDS)
+        await update.message.reply_text(f"✅ Đã thêm admin mới với ID: {new_id}")
+    except ValueError:
+        await update.message.reply_text("⚠️ ID không hợp lệ.")
+
+async def remove_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id):
+        return await update.message.reply_text("❌ Bạn không có quyền.")
+
+    if not context.args:
+        return await update.message.reply_text("❗ Cú pháp: /removeadmin <user_id>")
+
+    try:
+        user_id_to_remove = int(context.args[0])
+
+        if user_id_to_remove in ADMIN_IDS:
+            ADMIN_IDS.remove(user_id_to_remove)
+            save_admins(ADMIN_IDS)
+            await update.message.reply_text(f"✅ Đã xoá admin có ID: {user_id_to_remove}")
+        else:
+            await update.message.reply_text("❌ ID này không phải là admin.")
+    except ValueError:
+        await update.message.reply_text("⚠️ ID phải là số nguyên.")
 
 async def luu_y(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
@@ -646,7 +713,7 @@ async def luu_y(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Nội dung lưu ý
     note = ("⚠️ **Lưu ý** ⚠️\n\n"
             "🔹 **Trò chơi đang diễn ra chưa kết thúc.**\n"
-            "🔹 **Khi nào kết thúc ấn [startgame] để tiếp tục chơi nhé!**")
+            "🔹 **Khi nào kết thúc ấn [startgame] Để tiếp tục chơi nhé!**")
 
     # Gửi tin nhắn lưu ý cho người chơi
     await update.message.reply_text(note)
@@ -677,6 +744,9 @@ def main():
     app.add_handler(CommandHandler("ban", ban_user))
     app.add_handler(CommandHandler("kick", kick_user))
     app.add_handler(CommandHandler("list", list_players))
+	app.add_handler(CommandHandler("getid", get_id))
+	app.add_handler(CommandHandler("addadmin", add_admin))
+	app.add_handler(CommandHandler("removeadmin", remove_admin))
     app.add_handler(CommandHandler("admin", admin_command))
     app.add_handler(CommandHandler("luuy", luu_y))
     app.add_handler(
