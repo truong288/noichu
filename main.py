@@ -25,12 +25,12 @@ game_start_time = {}
 chat_id = {}
 BANNED_USERS = {}
 
-
 GLOBAL_BANNED_WORDS = {
     "đần", "bần", "ngu", "ngốc", "bò", "dốt", "nát", "chó", "địt", "mẹ", "mày",
     "chi", "mô", "răng", "rứa", "má", "lồn", "lòn", "cứt"
 }
 BANNED_WORDS_FILE = "banned_words.txt"
+
 
 def load_banned_words():
     if os.path.exists(BANNED_WORDS_FILE):
@@ -38,9 +38,11 @@ def load_banned_words():
             return set(line.strip().lower() for line in f.readlines())
     return set()
 
+
 def save_banned_words():
     with open(BANNED_WORDS_FILE, "w", encoding="utf-8") as f:
         f.write("\n".join(sorted(GLOBAL_BANNED_WORDS)))
+
 
 GLOBAL_BANNED_WORDS.update(load_banned_words())
 
@@ -58,8 +60,8 @@ def load_tu_don():
 
 TU_DON_LIST = load_tu_don()
 
-
 ADMINS_FILE = "admins.json"
+
 
 def load_admins():
     if os.path.exists(ADMINS_FILE):
@@ -67,15 +69,17 @@ def load_admins():
             return set(json.load(f))
     return set()
 
+
 def save_admins(admin_ids):
     with open(ADMINS_FILE, "w") as f:
         json.dump(list(admin_ids), f)
 
+
 ADMIN_IDS = load_admins()
+
 
 def is_admin(user_id):
     return user_id in ADMIN_IDS
-
 
 
 def load_stats():
@@ -139,7 +143,7 @@ async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     user = update.effective_user
 
-    # Nếu là ADMIN → Xóa TOÀN BỘ 
+    # Nếu là ADMIN → Xóa TOÀN BỘ
     if is_admin(user.id):
         global stats
         stats = {}  # Xóa sạch toàn bộ thống kê
@@ -150,21 +154,23 @@ async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         # Lưu lại thống kê cũ của nhóm này trước khi xóa
         old_stats = stats.get(str(chat_id), {}).copy()
-        
+
         # Reset trạng thái game nhóm hiện tại
         reset_game_state(chat_id)
-        
+
         # Xóa stats nhóm hiện tại
         str_chat_id = str(chat_id)
         if str_chat_id in stats:
             del stats[str_chat_id]
             save_stats(stats)
-        
+
         # Khôi phục lại thống kê cũ (chỉ để admin xem)
         stats["_hidden_" + str_chat_id] = old_stats
         save_stats(stats)
-        
-        await update.message.reply_text("✅ Trò chơi và bảng xếp hạng đã  reset **")
+
+        await update.message.reply_text(
+            "✅ Trò chơi và bảng xếp hạng đã  reset **")
+
 
 def is_vietnamese(text):
     text = text.strip().lower()
@@ -470,6 +476,7 @@ async def turn_timer(context, chat_id):
     except asyncio.CancelledError:
         pass
 
+
 async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     chat_id = str(update.effective_chat.id)
@@ -477,12 +484,12 @@ async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Nếu là ADMIN: hiển thị toàn bộ stats (bao gồm cả nhóm đã reset)
     if is_admin(user_id):
         combined_stats = {}
-        
+
         # Lấy stats hiện tại
         for group_id, group_stats in stats.items():
             if not group_id.startswith("_"):  # Bỏ qua các stats ẩn
                 combined_stats[group_id] = group_stats
-        
+
         # Lấy stats từ các nhóm đã reset
         for group_id, group_stats in stats.items():
             if group_id.startswith("_hidden_"):
@@ -496,25 +503,27 @@ async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         message = "🏆 BẢNG XẾP HẠNG All 🏆\n\n"
         for group_id, group_stats in combined_stats.items():
             message += f"📍 Nhóm {group_id}:\n"
-            ranking = sorted(group_stats.items(), key=lambda x: x[1], reverse=True)
+            ranking = sorted(group_stats.items(),
+                             key=lambda x: x[1],
+                             reverse=True)
             for i, (name, wins) in enumerate(ranking[:10], 1):
                 message += f"  {i}. {name}: {wins} lần thắng\n"
             message += "\n"
         await update.message.reply_text(message)
-    
+
     # Nếu là người thường: chỉ hiển thị stats nhóm hiện tại (nếu có)
     else:
         if chat_id not in stats or not stats[chat_id]:
             await update.message.reply_text("📊 Nhóm này chưa có ai thắng!")
             return
 
-        ranking = sorted(stats[chat_id].items(), key=lambda x: x[1], reverse=True)
+        ranking = sorted(stats[chat_id].items(),
+                         key=lambda x: x[1],
+                         reverse=True)
         message = "🏆 BẢNG XẾP HẠNG NHÓM 🏆\n\n"
         for i, (name, wins) in enumerate(ranking[:10], 1):
             message += f"{i}. {name}: {wins} lần thắng\n"
         await update.message.reply_text(message)
-
-
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -578,7 +587,8 @@ async def add_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     GLOBAL_BANNED_WORDS.add(new_word)
     save_banned_words()
-    await update.message.reply_text(f"✅ Đã thêm từ cấm: '{new_word}' thành công.")
+    await update.message.reply_text(
+        f"✅ Đã thêm từ cấm: '{new_word}' thành công.")
 
 
 async def ban_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -650,12 +660,13 @@ async def admin_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                       "🔹 /ban @username - Cấm .\n"
                       "🔹 /kick @username - Kích.\n"
                       "🔹 /addword <từ> - Thêm từ:...\n"
-                      "🔹 /reset - Làm mới lại toàn bộ.\n" 
-					  "🔹 /getid - @username Để lấy ID.\n"
-					  "🔹 /addadmin - ID Làm admin.\n"
-					  "🔹 /removeadmin - ID Xoá admin.")
+                      "🔹 /reset - Làm mới lại toàn bộ.\n"
+                      "🔹 /getid - @username Để lấy ID.\n"
+                      "🔹 /addadmin - ID Làm admin.\n"
+                      "🔹 /removeadmin - ID Xoá admin.")
 
     await update.message.reply_text(admin_commands, parse_mode="Markdown")
+
 
 async def get_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
@@ -668,32 +679,38 @@ async def get_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     members = player_usernames.get(chat.id, {})
     for uid, uname in members.items():
         if uname.lower() == username.lower():
-            await update.message.reply_text(f"🆔 ID của @{username} là: `{uid}`", parse_mode="Markdown")
+            await update.message.reply_text(
+                f"🆔 ID của @{username} là: `{uid}`", parse_mode="Markdown")
             return
 
     await update.message.reply_text("❌ Không tìm thấy username.")
+
 
 async def add_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
         return await update.message.reply_text("❌ Bạn không có quyền.")
 
     if not context.args:
-        return await update.message.reply_text("❗ Cú pháp: /addadmin <user_id>")
+        return await update.message.reply_text("❗ Cú pháp: /addadmin <user_id>"
+                                               )
 
     try:
         new_id = int(context.args[0])
         ADMIN_IDS.add(new_id)
         save_admins(ADMIN_IDS)
-        await update.message.reply_text(f"✅ Đã thêm admin mới với ID: {new_id}")
+        await update.message.reply_text(f"✅ Đã thêm admin mới với ID: {new_id}"
+                                        )
     except ValueError:
         await update.message.reply_text("⚠️ ID không hợp lệ.")
+
 
 async def remove_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
         return await update.message.reply_text("❌ Bạn không có quyền.")
 
     if not context.args:
-        return await update.message.reply_text("❗ Cú pháp: /removeadmin <user_id>")
+        return await update.message.reply_text(
+            "❗ Cú pháp: /removeadmin <user_id>")
 
     try:
         user_id_to_remove = int(context.args[0])
@@ -701,11 +718,13 @@ async def remove_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if user_id_to_remove in ADMIN_IDS:
             ADMIN_IDS.remove(user_id_to_remove)
             save_admins(ADMIN_IDS)
-            await update.message.reply_text(f"✅ Đã xoá admin có ID: {user_id_to_remove}")
+            await update.message.reply_text(
+                f"✅ Đã xoá admin có ID: {user_id_to_remove}")
         else:
             await update.message.reply_text("❌ ID này không phải là admin.")
     except ValueError:
         await update.message.reply_text("⚠️ ID phải là số nguyên.")
+
 
 async def luu_y(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
@@ -725,8 +744,8 @@ async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "❓ Lệnh không hợp lệ. Gõ /help để xem lệnh.\n\n"
         "🎮 game Caro:\u2003\u2003@Game_carobot\n"
-        "🎮 Nối chữ:\u2003\u2003\u2003@noi_chu_bot"
-    )
+        "🎮 Nối chữ:\u2003\u2003\u2003@noi_chu_bot")
+
 
 def main():
     TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
@@ -744,9 +763,9 @@ def main():
     app.add_handler(CommandHandler("ban", ban_user))
     app.add_handler(CommandHandler("kick", kick_user))
     app.add_handler(CommandHandler("list", list_players))
-	app.add_handler(CommandHandler("getid", get_id))
-	app.add_handler(CommandHandler("addadmin", add_admin))
-	app.add_handler(CommandHandler("removeadmin", remove_admin))
+    app.add_handler(CommandHandler("getid", get_id))
+    app.add_handler(CommandHandler("addadmin", add_admin))
+    app.add_handler(CommandHandler("removeadmin", remove_admin))
     app.add_handler(CommandHandler("admin", admin_command))
     app.add_handler(CommandHandler("luuy", luu_y))
     app.add_handler(
@@ -755,6 +774,6 @@ def main():
 
     print("Bot is running...")
     app.run_polling()
-    
+
 if __name__ == '__main__':
     main()
